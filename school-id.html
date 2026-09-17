@@ -1,0 +1,3390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ID Card Studio 2.0 — Bulk School ID Generator | Developed by Amar Bhardwaj</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&family=Oswald:wght@300;400;500;600;700&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Merriweather:wght@300;400;700;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Rubik:wght@300;400;500;600;700&family=Anton&family=Bebas+Neue&family=Teko:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800&family=Noto+Serif+Devanagari:wght@400;500;600;700&family=Courier+Prime:wght@400;700&family=Archivo+Black&family=Cinzel:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --ink:#16222F; --ink-2:#2B3A4A; --ink-3:#5C6B7A;
+  --paper:#EEF1F5; --panel:#FFFFFF; --panel-2:#F7F9FB;
+  --line:#D5DDE6; --line-2:#BCC7D3;
+  --amber:#E8912B; --amber-soft:#FDF2E2;
+  --teal:#0E7C6B; --teal-soft:#E3F3F0;
+  --red:#C23B2E; --red-soft:#FBEBE9;
+  --blue:#2563A8; --blue-soft:#E7F0FA;
+  --r:7px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'DM Sans',system-ui,sans-serif;
+  background:var(--paper); color:var(--ink);
+  font-size:14px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:20px;border:3px solid var(--paper)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ===== SHELL ===== */
+.topbar{
+  background:var(--ink); color:#fff; padding:0 16px;
+  display:flex; align-items:center; gap:14px; height:54px;
+  position:sticky; top:0; z-index:60;
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.2px;font-size:16px}
+.brand .by{font-weight:400;font-size:11px;color:rgba(255,255,255,.55);letter-spacing:0;margin-left:2px}
+.brand .mk{
+  width:26px;height:26px;border-radius:5px;background:var(--amber);
+  display:grid;place-items:center;color:var(--ink);font-size:13px;font-weight:700
+}
+.topbar .sp{flex:1}
+.tb-btn{
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16);
+  color:#fff; padding:6px 12px; border-radius:var(--r); font-size:13px; font-weight:500;
+}
+.tb-btn:hover{background:rgba(255,255,255,.16)}
+.tb-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ===== TABS ===== */
+.tabs{
+  display:flex; background:var(--panel); border-bottom:1px solid var(--line);
+  position:sticky; top:54px; z-index:55; overflow-x:auto;
+}
+.tab{
+  background:none;border:none;padding:13px 20px;font-size:13.5px;font-weight:500;
+  color:var(--ink-3); border-bottom:2.5px solid transparent; white-space:nowrap;
+  display:flex;align-items:center;gap:9px;
+}
+.tab:hover{color:var(--ink);background:var(--panel-2)}
+.tab.on{color:var(--ink);border-bottom-color:var(--amber);font-weight:700}
+.tab .n{
+  width:20px;height:20px;border-radius:50%;background:var(--paper);
+  display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--ink-3)
+}
+.tab.on .n{background:var(--amber);color:#fff}
+.tab.done .n{background:var(--teal);color:#fff}
+
+.page{display:none;padding:18px}
+.page.on{display:block}
+
+/* ===== LAYOUT ===== */
+.split{display:grid;grid-template-columns:288px minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media(max-width:1280px){.split{grid-template-columns:260px minmax(0,1fr);}
+  .split>.rightcol{grid-column:1/-1}}
+@media(max-width:860px){.split{grid-template-columns:1fr}}
+@media(max-width:900px){.split2{grid-template-columns:1fr !important}}
+@media(max-width:640px){
+  .page{padding:12px}
+  .topbar{gap:8px;padding:0 10px}
+  .brand .by{display:none}
+  .tab{padding:11px 13px;font-size:12.5px}
+  .stage-wrap{padding:14px}
+}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.card+.card{margin-top:14px}
+.card-h{
+  padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;font-size:13px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
+}
+.card-b{padding:14px}
+.card-b.tight{padding:10px}
+
+.fld{margin-bottom:11px}
+.fld:last-child{margin-bottom:0}
+label.lb{display:block;font-size:11.5px;font-weight:500;color:var(--ink-3);margin-bottom:4px}
+.in,select.in,textarea.in{
+  width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--panel-2);font-size:13px;outline:none;
+}
+.in:focus{border-color:var(--amber);background:#fff;box-shadow:0 0 0 3px var(--amber-soft)}
+.in[type=color]{padding:2px;height:32px;cursor:pointer}
+.in[type=range]{padding:0;background:none;border:none;accent-color:var(--amber);height:22px}
+.row{display:flex;gap:8px}
+.row>*{flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+
+.btn{
+  padding:8px 14px;border:1px solid var(--line-2);border-radius:var(--r);
+  background:var(--panel);font-size:13px;font-weight:500;
+}
+.btn:hover{background:var(--panel-2);border-color:var(--ink-3)}
+.btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.pri:hover{background:var(--ink-2)}
+.btn.amb{background:var(--amber);color:#fff;border-color:var(--amber)}
+.btn.amb:hover{filter:brightness(.93)}
+.btn.tl{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn.tl:hover{filter:brightness(.93)}
+.btn.dn{color:var(--red);border-color:#E8BDB8}
+.btn.dn:hover{background:var(--red-soft)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.xs{padding:3px 7px;font-size:11px}
+.btn.full{width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.on{border-color:var(--amber);background:var(--amber-soft);font-weight:700}
+
+.chip{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;
+  font-size:11.5px;font-weight:500;background:var(--paper);color:var(--ink-3)
+}
+.chip.a{background:var(--amber-soft);color:#8A5210}
+.chip.t{background:var(--teal-soft);color:#0A5A4D}
+.chip.b{background:var(--blue-soft);color:#1A4573}
+.chip.r{background:var(--red-soft);color:#8E2A20}
+
+.hint{font-size:11.5px;color:var(--ink-3);line-height:1.5}
+.hint code{background:var(--paper);padding:1px 4px;border-radius:3px;font-size:11px}
+.sep{height:1px;background:var(--line);margin:12px 0}
+.muted{color:var(--ink-3)}
+
+.drop{
+  border:1.5px dashed var(--line-2);border-radius:9px;padding:16px;text-align:center;
+  background:var(--panel-2);cursor:pointer;
+}
+.drop:hover,.drop.hv{border-color:var(--amber);background:var(--amber-soft)}
+.drop b{display:block;font-size:13px;margin-bottom:2px}
+
+/* ===== DESIGN STAGE ===== */
+.stage-wrap{
+  background:#5E6B78;
+  background-image:linear-gradient(45deg,#00000010 25%,transparent 25%,transparent 75%,#00000010 75%),
+                   linear-gradient(45deg,#00000010 25%,transparent 25%,transparent 75%,#00000010 75%);
+  background-size:18px 18px;background-position:0 0,9px 9px;
+  border-radius:0;padding:28px;overflow:auto;min-height:460px;
+  display:flex;align-items:center;justify-content:center;
+}
+.stage-outer{position:relative;flex:0 0 auto}
+#stageCv{display:block;background:#fff;box-shadow:0 5px 26px rgba(0,0,0,.34)}
+#stageOvl{position:absolute;inset:0}
+.el{
+  position:absolute;cursor:move;
+  outline:1px dashed rgba(232,145,43,0);
+}
+.el:hover{outline-color:rgba(232,145,43,.85)}
+.el.sel{outline:1.5px solid var(--amber)}
+.el.msel{outline:1.5px dashed var(--blue)}
+.el.lock{cursor:default}
+.hnd{
+  position:absolute;width:10px;height:10px;background:#fff;border:1.5px solid var(--amber);
+  border-radius:2px;
+}
+.hnd.nw{left:-5px;top:-5px;cursor:nwse-resize}
+.hnd.ne{right:-5px;top:-5px;cursor:nesw-resize}
+.hnd.sw{left:-5px;bottom:-5px;cursor:nesw-resize}
+.hnd.se{right:-5px;bottom:-5px;cursor:nwse-resize}
+.hnd.n{left:50%;top:-5px;margin-left:-5px;cursor:ns-resize}
+.hnd.s{left:50%;bottom:-5px;margin-left:-5px;cursor:ns-resize}
+.hnd.w{left:-5px;top:50%;margin-top:-5px;cursor:ew-resize}
+.hnd.e{right:-5px;top:50%;margin-top:-5px;cursor:ew-resize}
+.hnd.rot{left:50%;top:-24px;margin-left:-6px;width:12px;height:12px;border-radius:50%;cursor:grab;border-color:var(--blue)}
+
+/* ===== LAYER LIST ===== */
+.lyr{
+  display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--r);
+  font-size:12.5px;cursor:pointer;border:1px solid transparent;
+}
+.lyr:hover{background:var(--panel-2)}
+.lyr.on{background:var(--amber-soft);border-color:#F0CE9E}
+.lyr.msel{background:var(--blue-soft);border-color:#A9C6E6}
+.lyr .ic{width:16px;text-align:center;font-size:12px;opacity:.65}
+.lyr .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.lyr .tg{border:none;background:none;font-size:12px;padding:0 2px;opacity:.5}
+.lyr .tg:hover{opacity:1}
+.lyr .x{border:none;background:none;color:var(--red);font-size:14px;padding:0 3px;opacity:0}
+.lyr:hover .x{opacity:1}
+.lyr.drag{opacity:.4}
+.lyr.over{border-top:2px solid var(--amber)}
+
+/* ===== TABLE ===== */
+.tbl-wrap{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:9px;background:#fff}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{
+  background:var(--panel-2);text-align:left;padding:8px 10px;font-weight:700;font-size:11px;
+  color:var(--ink-3);position:sticky;top:0;border-bottom:1px solid var(--line);white-space:nowrap;z-index:2
+}
+td{padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:hover td{background:var(--panel-2)}
+tr.bad td{background:var(--red-soft)}
+td.edit{cursor:text}
+td.edit:hover{box-shadow:inset 0 0 0 1px var(--line-2)}
+.thumb{
+  width:30px;height:38px;object-fit:cover;border-radius:3px;border:1px solid var(--line);
+  background:var(--paper);display:block;cursor:pointer
+}
+.thumb.miss{display:grid;place-items:center;font-size:9px;color:var(--ink-3);border-style:dashed}
+
+/* ===== PREVIEW GRID ===== */
+.prev-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;
+  max-height:640px;overflow:auto;padding:4px;
+}
+.prev-cell{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:9px;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+}
+.prev-cell canvas{
+  max-width:100%;height:auto;display:block;border-radius:3px;
+  box-shadow:0 2px 10px rgba(0,0,0,.14);background:#fff
+}
+.prev-cell .nm{font-size:11px;font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prev-cell.warn{border-color:#E8BDB8;background:var(--red-soft)}
+
+/* ===== MISC ===== */
+.prog{height:7px;background:var(--paper);border-radius:20px;overflow:hidden;margin:9px 0}
+.prog i{display:block;height:100%;background:var(--amber);width:0;transition:width .18s}
+
+.stat{display:flex;gap:10px;flex-wrap:wrap}
+.stat .b{background:var(--panel-2);border-radius:8px;padding:9px 14px;min-width:92px}
+.stat .b .k{font-size:11px;color:var(--ink-3);font-weight:500}
+.stat .b .v{font-size:19px;font-weight:700;line-height:1.3}
+
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;
+  z-index:300;transition:transform .25s;box-shadow:0 8px 28px rgba(0,0,0,.28);max-width:90vw
+}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+.toast.ok{background:var(--teal)}
+
+.empty{padding:40px 20px;text-align:center;color:var(--ink-3)}
+.empty .big{font-size:32px;opacity:.28;margin-bottom:8px}
+
+.seg{display:flex;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);padding:2px;gap:2px}
+.seg button{flex:1;border:none;background:none;padding:6px 8px;border-radius:5px;font-size:12px;font-weight:500;color:var(--ink-3)}
+.seg button.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.09)}
+
+.grp{
+  font-size:10.5px;font-weight:700;color:var(--ink-3);margin:13px 0 6px;
+  padding-bottom:4px;border-bottom:1px solid var(--line)
+}
+.grp:first-child{margin-top:0}
+
+.ovl{
+  position:fixed;inset:0;background:rgba(22,34,47,.55);z-index:200;
+  display:none;align-items:flex-start;justify-content:center;padding:50px 16px;
+}
+.ovl.on{display:flex}
+.modal{
+  background:var(--panel);border-radius:12px;width:min(600px,100%);max-height:82vh;
+  overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)
+}
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
+.icon-btn{
+  border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:10px 5px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10.5px;color:var(--ink-3)
+}
+.icon-btn:hover{border-color:var(--amber);background:var(--amber-soft);color:var(--ink)}
+.icon-btn svg{width:22px;height:22px;fill:currentColor}
+
+table.coord td{padding:4px 6px}
+table.coord input{
+  border:1px solid transparent;background:none;width:56px;font-size:12px;padding:2px 4px;
+  border-radius:4px;outline:none;text-align:right;font-variant-numeric:tabular-nums
+}
+table.coord input:hover{border-color:var(--line)}
+table.coord input:focus{border-color:var(--amber);background:#fff}
+table.coord tr.on td{background:var(--amber-soft)}
+table.coord tr.msel td{background:var(--blue-soft)}
+
+#offscreen{position:fixed;left:-99999px;top:0;pointer-events:none;opacity:0}
+.kbd{
+  display:inline-block;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:4px;
+  padding:0 4px;font-size:10.5px;background:var(--panel-2);font-family:'Courier Prime',monospace
+}
+.swatch-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.sw{width:19px;height:19px;border-radius:4px;border:1px solid var(--line-2);cursor:pointer;padding:0}
+.sw:hover{transform:scale(1.14)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="mk">ID</span> ID Card Studio <span class="by">Developed by Amar Bhardwaj</span></div>
+  <span class="chip a" id="tplBadge">No template</span>
+  <div class="sp"></div>
+  <button class="tb-btn" id="btnUndo" onclick="undo()" title="Ctrl+Z">Undo</button>
+  <button class="tb-btn" id="btnRedo" onclick="redo()" title="Ctrl+Y">Redo</button>
+  <button class="tb-btn" onclick="saveProject()">Save project</button>
+  <button class="tb-btn" onclick="fp.click()">Open project</button>
+  <input type="file" id="fp" accept=".json,.idcs" hidden onchange="loadProject(this.files[0]);this.value=''">
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab on" data-t="0"><span class="n">1</span> Create template</button>
+  <button class="tab" data-t="1"><span class="n">2</span> School details</button>
+  <button class="tab" data-t="2"><span class="n">3</span> Student details</button>
+  <button class="tab" data-t="3"><span class="n">4</span> Preview</button>
+  <button class="tab" data-t="4"><span class="n">5</span> Export</button>
+</div>
+
+<!-- ================= TAB 1 : TEMPLATE ================= -->
+<div class="page on" id="p0">
+  <div class="split">
+
+    <!-- LEFT -->
+    <div>
+      <div class="card">
+        <div class="card-h">Card size</div>
+        <div class="card-b">
+          <div class="fld">
+            <label class="lb">Preset</label>
+            <select class="in" id="sizePreset" onchange="applyPreset()">
+              <option value="85.6,54">CR80 landscape — 85.6 × 54 mm</option>
+              <option value="54,85.6" selected>CR80 portrait — 54 × 85.6 mm</option>
+              <option value="63.5,88.9">Portrait large — 63.5 × 88.9 mm</option>
+              <option value="86,54">Standard PVC — 86 × 54 mm</option>
+              <option value="105,74">A7 landscape — 105 × 74 mm</option>
+              <option value="74,105">A7 portrait — 74 × 105 mm</option>
+              <option value="custom">Custom…</option>
+            </select>
+          </div>
+          <div class="grid2">
+            <div class="fld"><label class="lb">Width (mm)</label><input class="in" type="number" id="cardW" value="54" step="0.1" min="10" onchange="onSizeChange()"></div>
+            <div class="fld"><label class="lb">Height (mm)</label><input class="in" type="number" id="cardH" value="85.6" step="0.1" min="10" onchange="onSizeChange()"></div>
+          </div>
+          <div class="grid2">
+            <div class="fld"><label class="lb">Corner radius (mm)</label><input class="in" type="number" id="cardR" value="3" step="0.5" min="0" onchange="onSizeChange()"></div>
+            <div class="fld"><label class="lb">Safe margin (mm)</label><input class="in" type="number" id="cardSafe" value="3" step="0.5" min="0" onchange="drawStage()"></div>
+          </div>
+          <div class="hint">Card ka physical size. PDF, PNG aur preview — teeno me bilkul yahi size aayega.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <span>Card side</span>
+          <label class="hint" style="display:flex;gap:5px;align-items:center;cursor:pointer;font-weight:400">
+            <input type="checkbox" id="twoSided" onchange="toggleTwoSided()"> Back side on
+          </label>
+        </div>
+        <div class="card-b tight">
+          <div class="seg" id="sideSeg" style="display:none">
+            <button class="on" id="sgFront" onclick="setSide('front')">Front</button>
+            <button id="sgBack" onclick="setSide('back')">Back</button>
+          </div>
+          <div class="hint" id="sideHint" style="padding:2px">Back side chahiye to checkbox on karo — dono side alag design honge aur PDF me alag pages par aayenge.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Background image</div>
+        <div class="card-b">
+          <div class="drop" id="bgDrop" onclick="bgFile.click()">
+            <b>Upload background</b>
+            <span class="hint">PNG / JPG · drag &amp; drop bhi chalega</span>
+          </div>
+          <input type="file" id="bgFile" accept="image/*" hidden onchange="loadBg(this.files[0]);this.value=''">
+          <div id="bgInfo" style="display:none">
+            <div class="sep"></div>
+            <div class="hint" id="bgMeta"></div>
+            <div class="fld" style="margin-top:9px">
+              <label class="lb">Fit mode</label>
+              <select class="in" id="bgFit" onchange="side().bgFit=this.value;drawStage()">
+                <option value="fill">Stretch to fill (exact)</option>
+                <option value="cover">Cover (crop extra)</option>
+                <option value="contain">Contain (full image)</option>
+              </select>
+            </div>
+            <div class="row">
+              <button class="btn sm" onclick="matchAspect()">Match card to image</button>
+              <button class="btn sm dn" onclick="removeBg()">Remove</button>
+            </div>
+            <div class="hint" style="margin-top:8px">Quality tip: 300 DPI pe <b id="idealPx">—</b> ideal hai.</div>
+          </div>
+          <div class="fld" style="margin-top:10px">
+            <label class="lb">Base colour (background ke neeche)</label>
+            <input class="in" type="color" id="cardBase" value="#ffffff" onchange="side().base=this.value;drawStage()">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Add element</div>
+        <div class="card-b">
+          <div class="grp">Text</div>
+          <div class="grid2" style="gap:7px">
+            <button class="btn sm" onclick="addText('student')">Student field</button>
+            <button class="btn sm" onclick="addText('school')">School field</button>
+            <button class="btn sm" onclick="addText('static')">Fixed text</button>
+            <button class="btn sm" onclick="addText('pair')">Label + value</button>
+          </div>
+
+          <div class="grp">Images</div>
+          <div class="grid2" style="gap:7px">
+            <button class="btn sm" onclick="addImg('school')">Logo / sign</button>
+            <button class="btn sm" onclick="addImg('student')">Student photo</button>
+          </div>
+
+          <div class="grp">Shapes</div>
+          <div class="grid2" style="gap:7px">
+            <button class="btn sm" onclick="addShape('rect')">Rectangle</button>
+            <button class="btn sm" onclick="addShape('circle')">Circle</button>
+            <button class="btn sm" onclick="addShape('line')">Line</button>
+            <button class="btn sm" onclick="addBadge()">Badge + text</button>
+          </div>
+
+          <div class="grp">Icons &amp; codes</div>
+          <div class="grid2" style="gap:7px">
+            <button class="btn sm" onclick="openIconPicker()">Icon library</button>
+            <button class="btn sm" onclick="addCode('qr')">QR code</button>
+            <button class="btn sm" onclick="addCode('barcode')">Barcode</button>
+            <button class="btn sm" onclick="addStrip()">Signature line</button>
+          </div>
+
+          <div class="sep"></div>
+          <div class="hint"><b>Student field</b> = har card pe badlega.<br><b>School field</b> = sab cards pe same.<br><b>Fixed text</b> = template me hi likha rahega.<br><b>Label + value</b> = "Class: 10-A" jaisa pair.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div>
+      <div class="card">
+        <div class="card-h">
+          <span>Design canvas</span>
+          <span style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+            <button class="btn sm" onclick="alignSel('l')" title="Align left">⇤</button>
+            <button class="btn sm" onclick="alignSel('cx')" title="Center horizontally">↔</button>
+            <button class="btn sm" onclick="alignSel('r')" title="Align right">⇥</button>
+            <button class="btn sm" onclick="alignSel('t')" title="Align top">⇡</button>
+            <button class="btn sm" onclick="alignSel('cy')" title="Center vertically">↕</button>
+            <button class="btn sm" onclick="alignSel('b')" title="Align bottom">⇣</button>
+            <span style="width:1px;height:20px;background:var(--line)"></span>
+            <button class="btn sm" onclick="zoomBy(-.15)">−</button>
+            <span class="chip" id="zoomLbl" style="min-width:52px;justify-content:center">100%</span>
+            <button class="btn sm" onclick="zoomBy(.15)">+</button>
+            <button class="btn sm" onclick="fitZoom()">Fit</button>
+          </span>
+        </div>
+        <div class="stage-wrap" id="stageWrap">
+          <div class="stage-outer" id="stageOuter">
+            <canvas id="stageCv"></canvas>
+            <div id="stageOvl"></div>
+          </div>
+        </div>
+        <div class="card-b tight" style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line)">
+          <span class="hint" id="coordRead">Click element → drag to move · arrow keys nudge · Shift+arrow = 10×</span>
+          <div style="flex:1"></div>
+          <label class="hint" style="display:flex;gap:5px;align-items:center;cursor:pointer">
+            <input type="checkbox" id="showGuides" checked onchange="drawStage()"> Guides
+          </label>
+          <label class="hint" style="display:flex;gap:5px;align-items:center;cursor:pointer">
+            <input type="checkbox" id="snapOn" checked> Snap
+          </label>
+          <label class="hint" style="display:flex;gap:5px;align-items:center;cursor:pointer">
+            <input type="checkbox" id="sampleOn" checked onchange="drawStage()"> Sample data
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <span>Layers <span class="chip" id="layerCount">0</span></span>
+          <span style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn sm" onclick="dupSel()">Duplicate</button>
+            <button class="btn sm" onclick="groupSel()">Group</button>
+            <button class="btn sm" onclick="ungroupSel()">Ungroup</button>
+            <button class="btn sm dn" onclick="blankTemplate()">Start blank</button>
+            <button class="btn sm" onclick="starterTemplate()">Load starter</button>
+          </span>
+        </div>
+        <div class="card-b tight" id="layerList" style="max-height:230px;overflow:auto">
+          <div class="empty" style="padding:22px"><div class="hint">Abhi koi element nahi. Left panel se add karo.</div></div>
+        </div>
+        <div class="card-b tight" style="border-top:1px solid var(--line)">
+          <div class="hint">Multi-select: canvas ya list pe <span class="kbd">Shift</span>+click. Layer ko drag karke order badlo. <span class="kbd">Ctrl+D</span> duplicate, <span class="kbd">Del</span> delete.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <span>Coordinate map</span>
+          <span style="display:flex;gap:6px;flex-wrap:wrap">
+            <select class="in" id="coordUnit" onchange="renderCoordMap()" style="width:auto;padding:4px 8px;font-size:12px">
+              <option value="pct">Percent</option>
+              <option value="mm">Millimetre</option>
+              <option value="px300">Pixels @300dpi</option>
+            </select>
+            <button class="btn sm" onclick="copyCoords()">Copy JSON</button>
+            <button class="btn sm" onclick="exportTemplate()">Save template</button>
+            <button class="btn sm" onclick="tplFile.click()">Load</button>
+            <input type="file" id="tplFile" accept=".json" hidden onchange="importTemplate(this.files[0]);this.value=''">
+          </span>
+        </div>
+        <div class="card-b tight" id="coordMap" style="max-height:260px;overflow:auto"></div>
+        <div class="card-b tight" style="border-top:1px solid var(--line)">
+          <div class="hint">Percent values card size se independent hain — card size badloge to bhi layout waisa hi rahega. "Save template" se sirf design save hota hai (student data ke bina).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="rightcol">
+      <div class="card">
+        <div class="card-h">
+          <span>Properties</span>
+          <span class="chip" id="propKind"></span>
+        </div>
+        <div class="card-b" id="propPanel">
+          <div class="empty" style="padding:30px 10px">
+            <div class="big">⌖</div>
+            <div class="hint">Canvas pe kisi element ko select karo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= TAB 2 : SCHOOL ================= -->
+<div class="page" id="p1">
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start" class="split2">
+    <div class="card">
+      <div class="card-h">School details <span class="chip" id="schCount">0 fields</span></div>
+      <div class="card-b" id="schoolForm">
+        <div class="empty">
+          <div class="big">◫</div>
+          <div class="hint">Pehle template me <b>School field</b> ya <b>Logo</b> add karo.<br>Wahi fields yahan automatically aa jayenge.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <span>Live preview</span>
+        <div class="seg" id="schSideSeg" style="width:auto;display:none">
+          <button class="on" onclick="schPvSide('front',this)">Front</button>
+          <button onclick="schPvSide('back',this)">Back</button>
+        </div>
+      </div>
+      <div class="card-b" style="display:flex;justify-content:center;background:var(--panel-2)">
+        <canvas id="schPreview" style="max-width:100%;height:auto;box-shadow:0 3px 16px rgba(0,0,0,.18);border-radius:4px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TAB 3 : STUDENTS ================= -->
+<div class="page" id="p2">
+  <div style="display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start" class="split2">
+
+    <div>
+      <div class="card">
+        <div class="card-h">Add students</div>
+        <div class="card-b">
+          <div class="seg" style="margin-bottom:12px">
+            <button class="on" id="segManual" onclick="switchEntry('manual')">Manual</button>
+            <button id="segBulk" onclick="switchEntry('bulk')">Bulk upload</button>
+          </div>
+
+          <div id="entryManual">
+            <div id="manualForm"></div>
+            <button class="btn amb full" style="margin-top:10px" onclick="addManualStudent()">Add student</button>
+          </div>
+
+          <div id="entryBulk" style="display:none">
+            <div class="drop" id="csvDrop" onclick="csvFile.click()">
+              <b>Upload CSV / Excel</b>
+              <span class="hint">.csv · .xlsx · .xls</span>
+            </div>
+            <input type="file" id="csvFile" accept=".csv,.xlsx,.xls" hidden onchange="loadSheet(this.files[0]);this.value=''">
+            <div class="row" style="margin-top:9px">
+              <button class="btn sm" onclick="downloadSample()">Sample sheet</button>
+              <button class="btn sm" onclick="pasteBox.style.display = pasteBox.style.display === 'block' ? 'none' : 'block'">Paste data</button>
+            </div>
+            <div id="pasteBox" style="display:none;margin-top:9px">
+              <textarea class="in" id="pasteArea" rows="5" placeholder="Excel se copy karke yahan paste karo (pehli line = column names)"></textarea>
+              <button class="btn sm full" style="margin-top:6px" onclick="loadPasted()">Read pasted data</button>
+            </div>
+            <div class="hint" style="margin-top:8px">Sheet ke column names template field names se match hone chahiye. Nahi hue to mapping screen apne aap aa jayegi.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Student photos <span class="chip" id="photoChip">0</span></div>
+        <div class="card-b">
+          <div class="grid2" style="gap:7px">
+            <button class="btn sm" onclick="photoDir.click()"><b>📁 Select folder</b></button>
+            <button class="btn sm" onclick="photoFiles.click()">🖼 Select files</button>
+            <button class="btn sm" onclick="photoZip.click()">🗜 Photos ZIP</button>
+            <button class="btn sm dn" onclick="clearPhotos()">Clear photos</button>
+          </div>
+          <input type="file" id="photoDir" webkitdirectory directory multiple hidden onchange="loadPhotos(this.files);this.value=''">
+          <input type="file" id="photoFiles" accept="image/*" multiple hidden onchange="loadPhotos(this.files);this.value=''">
+          <input type="file" id="photoZip" accept=".zip" hidden onchange="loadPhotoZip(this.files[0]);this.value=''">
+
+          <div class="drop" id="photoDrop" style="margin-top:9px" onclick="photoFiles.click()">
+            <b>Ya photos yahan drag &amp; drop karo</b>
+            <span class="hint">Poora folder bhi drop kar sakte ho</span>
+          </div>
+
+          <div class="grid2" style="margin-top:10px">
+            <div class="fld" style="margin:0">
+              <label class="lb">Match mode</label>
+              <select class="in" id="photoMode" onchange="linkPhotos()">
+                <option value="field">File name = field value</option>
+                <option value="order">List order (name ignore)</option>
+              </select>
+            </div>
+            <div class="fld" style="margin:0">
+              <label class="lb">Match field</label>
+              <select class="in" id="photoKey" onchange="linkPhotos()"></select>
+            </div>
+          </div>
+
+          <label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer;margin-top:9px">
+            <input type="checkbox" id="photoSmart" checked onchange="linkPhotos()">
+            Smart match — <code>IMG_A1024.jpg</code>, <code>A1024_1.jpg</code> jaise naam bhi pakdo
+          </label>
+
+          <div class="fld" style="margin-top:10px">
+            <label class="lb">Image quality (photos ko resize karo)</label>
+            <select class="in" id="photoQ" onchange="toast('Agli baar upload karne pe apply hoga')">
+              <option value="700">Normal — 700px (fast, recommended)</option>
+              <option value="1000">High — 1000px</option>
+              <option value="0">Original — no resize (heavy)</option>
+            </select>
+          </div>
+
+          <div class="prog" id="phProg" style="display:none"><i id="phBar"></i></div>
+          <div class="hint" id="photoStat" style="margin-top:6px">Koi photo upload nahi ki.</div>
+          <div class="hint" style="margin-top:6px">Folder select karoge to andar ki saari images ek saath aa jayengi (sub-folder bhi). Naam se match hota hai: <code>A1024.jpg</code> us student se judega jiske match field ki value <code>A1024</code> hai — chhoti/badi spelling, space, dash, leading zero sab ignore ho jate hain. Kisi ek ki photo galat lage to table me uski photo cell pe click karke replace kar do.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <span>Student list <span class="chip t" id="stuCount">0</span> <span class="chip r" id="stuBad" style="display:none">0 incomplete</span></span>
+        <span style="display:flex;gap:7px;flex-wrap:wrap">
+          <input class="in" id="stuSearch" placeholder="Search…" style="width:140px;padding:5px 9px;font-size:12px" oninput="renderStudents()">
+          <button class="btn sm" onclick="exportCSV()">Export CSV</button>
+          <button class="btn sm dn" onclick="deleteChecked()">Delete selected</button>
+          <button class="btn sm dn" onclick="clearStudents()">Clear all</button>
+        </span>
+      </div>
+      <div class="card-b tight">
+        <div id="mapBox" style="display:none;background:var(--amber-soft);border:1px solid #F0CE9E;border-radius:9px;padding:12px;margin-bottom:12px">
+          <b style="font-size:13px">Column mapping</b>
+          <div class="hint" style="margin:4px 0 10px">Sheet ke columns ko template fields se jodo. <span id="mapRowCount"></span></div>
+          <div id="mapRows" class="grid2"></div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn amb sm" onclick="applyMapping()">Apply mapping</button>
+            <button class="btn sm" onclick="mapBox.style.display='none'">Cancel</button>
+          </div>
+        </div>
+        <div id="stuTable">
+          <div class="empty">
+            <div class="big">☰</div>
+            <div class="hint">Abhi koi student nahi. Manual add karo ya sheet upload karo.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= TAB 4 : PREVIEW ================= -->
+<div class="page" id="p3">
+  <div class="card">
+    <div class="card-b" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div class="stat">
+        <div class="b"><div class="k">Students</div><div class="v" id="pvStu">0</div></div>
+        <div class="b"><div class="k">Card size</div><div class="v" id="pvSize" style="font-size:14px">—</div></div>
+        <div class="b"><div class="k">Fields</div><div class="v" id="pvFields">0</div></div>
+        <div class="b"><div class="k">Missing data</div><div class="v" id="pvMiss">0</div></div>
+        <div class="b"><div class="k">No photo</div><div class="v" id="pvNoPhoto">0</div></div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="fld" style="margin:0;width:120px">
+        <label class="lb">Show</label>
+        <select class="in" id="pvCount" onchange="renderPreview()">
+          <option>12</option><option>24</option><option>48</option><option value="all">All</option>
+        </select>
+      </div>
+      <div class="fld" style="margin:0;width:130px">
+        <label class="lb">Filter</label>
+        <select class="in" id="pvFilter" onchange="renderPreview()">
+          <option value="all">All students</option>
+          <option value="bad">Only incomplete</option>
+          <option value="nophoto">Only no-photo</option>
+        </select>
+      </div>
+      <div class="fld" style="margin:0;width:110px" id="pvSideWrap">
+        <label class="lb">Side</label>
+        <select class="in" id="pvSide" onchange="renderPreview()">
+          <option value="front">Front</option>
+          <option value="back">Back</option>
+        </select>
+      </div>
+      <button class="btn pri" onclick="renderPreview()">Refresh preview</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h">Card preview <span class="hint" style="font-weight:400">Ye bilkul wahi hai jo print hoga</span></div>
+    <div class="card-b">
+      <div class="prev-grid" id="previewGrid">
+        <div class="empty" style="grid-column:1/-1"><div class="big">▦</div><div class="hint">Refresh dabao preview ke liye</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TAB 5 : EXPORT ================= -->
+<div class="page" id="p4">
+  <div style="display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start" class="split2">
+
+    <div class="card">
+      <div class="card-h">Output settings</div>
+      <div class="card-b">
+        <div class="fld">
+          <label class="lb">Print quality (DPI)</label>
+          <select class="in" id="dpi" onchange="updateStats()">
+            <option value="150">150 — draft, fast</option>
+            <option value="300" selected>300 — print quality</option>
+            <option value="600">600 — ultra (slow, heavy)</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label class="lb">Image format</label>
+          <select class="in" id="imgFmt">
+            <option value="jpeg">JPEG — smaller files</option>
+            <option value="png" selected>PNG — lossless</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label class="lb">File name pattern</label>
+          <input class="in" id="namePat" value="{roll}_{name}">
+          <div class="hint" style="margin-top:4px" id="patHint">Available: —</div>
+        </div>
+        <div class="sep"></div>
+        <div class="fld">
+          <label class="lb">Page size (PDF)</label>
+          <select class="in" id="pageSize" onchange="calcLayout()">
+            <option value="a4" selected>A4 — 210 × 297 mm</option>
+            <option value="a3">A3 — 297 × 420 mm</option>
+            <option value="letter">Letter — 216 × 279 mm</option>
+            <option value="legal">Legal — 216 × 356 mm</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label class="lb">Orientation</label>
+          <div class="seg">
+            <button class="on" id="orP" onclick="setOrient('p')">Portrait</button>
+            <button id="orL" onclick="setOrient('l')">Landscape</button>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label class="lb">Margin (mm)</label><input class="in" type="number" id="pMargin" value="10" step="1" min="0" onchange="calcLayout()"></div>
+          <div class="fld"><label class="lb">Gap (mm)</label><input class="in" type="number" id="pGap" value="4" step="0.5" min="0" onchange="calcLayout()"></div>
+        </div>
+        <div class="fld">
+          <label class="lb">Cut marks</label>
+          <div class="seg">
+            <button class="on" id="cmOn" onclick="setCut(1)">Show</button>
+            <button id="cmOff" onclick="setCut(0)">Hide</button>
+          </div>
+        </div>
+        <div class="fld" id="backModeWrap" style="display:none">
+          <label class="lb">Back side pages</label>
+          <select class="in" id="backMode">
+            <option value="after">Front pages, then back pages</option>
+            <option value="alt">Alternate — front, back, front, back</option>
+            <option value="none">Front only</option>
+          </select>
+        </div>
+        <div class="hint" id="layoutInfo" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-h">Generate</div>
+        <div class="card-b">
+          <div class="stat" style="margin-bottom:14px">
+            <div class="b"><div class="k">Cards</div><div class="v" id="exStu">0</div></div>
+            <div class="b"><div class="k">Per page</div><div class="v" id="exPer">0</div></div>
+            <div class="b"><div class="k">Pages</div><div class="v" id="exPages">0</div></div>
+            <div class="b"><div class="k">Render px</div><div class="v" id="exPx" style="font-size:14px">—</div></div>
+          </div>
+          <div class="grid2" style="gap:9px">
+            <button class="btn amb" onclick="exportPDF()">Print sheet PDF</button>
+            <button class="btn tl" onclick="exportZIP()">All cards (ZIP)</button>
+            <button class="btn pri" onclick="exportOnePerPage()">PDF — 1 card / page</button>
+            <button class="btn" onclick="exportSingle()">Single card…</button>
+          </div>
+          <div id="progWrap" style="display:none;margin-top:14px">
+            <div class="hint" id="progTxt">Working…</div>
+            <div class="prog"><i id="progBar"></i></div>
+            <button class="btn sm dn" style="margin-top:6px" onclick="CANCEL=true">Cancel</button>
+          </div>
+          <div class="sep"></div>
+          <div class="hint">Bade batch me browser thoda slow ho sakta hai — tab band mat karo jab tak progress complete na ho. 500+ students hain to 150 DPI + JPEG use karo.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Sheet layout preview</div>
+        <div class="card-b" style="background:var(--panel-2);display:flex;justify-content:center">
+          <canvas id="sheetPrev" style="max-width:100%;height:auto;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.14)"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ovl" id="iconOvl" onclick="if(event.target===this)closeIconPicker()">
+  <div class="modal">
+    <div class="card-h" style="position:sticky;top:0;background:var(--panel);z-index:2">
+      <span>Pick an icon</span>
+      <button class="btn sm" onclick="closeIconPicker()">Close</button>
+    </div>
+    <div class="card-b">
+      <div class="grp">Social</div>
+      <div class="icon-grid" id="iconsSocial"></div>
+      <div class="grp">Contact &amp; info</div>
+      <div class="icon-grid" id="iconsInfo"></div>
+      <div class="grp">School &amp; decorative</div>
+      <div class="icon-grid" id="iconsMisc"></div>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="singleOvl" onclick="if(event.target===this)singleOvl.classList.remove('on')">
+  <div class="modal" style="width:min(420px,100%)">
+    <div class="card-h"><span>Download a single card</span><button class="btn sm" onclick="singleOvl.classList.remove('on')">Close</button></div>
+    <div class="card-b">
+      <div class="fld"><label class="lb">Student</label><select class="in" id="singleSel"></select></div>
+      <div class="row">
+        <button class="btn amb full" onclick="doSingle('png')">Download PNG</button>
+        <button class="btn full" onclick="doSingle('pdf')">Download PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="rowPhoto" accept="image/*" hidden>
+<div id="offscreen"></div>
+<div class="toast" id="toast"></div>
+<script>
+/* =======================================================================
+   ID CARD STUDIO 2.0  —  Developed by Amar Bhardwaj
+   Single unified canvas renderer: design stage = preview = export.
+   ======================================================================= */
+
+/* ---------------- STATE ---------------- */
+const BLANK_SIDE = () => ({bg:null, bgW:0, bgH:0, bgFit:'fill', base:'#ffffff', els:[]});
+let S = {
+  card:{w:54, h:85.6, r:3},
+  twoSided:false,
+  side:'front',
+  sides:{front:BLANK_SIDE(), back:BLANK_SIDE()},
+  school:{},
+  students:[],
+  photos:{},        // normKey -> {name, url, w, h}
+  photoOrder:[],    // upload order, sorted by filename
+  zoom:1, orient:'p', cut:1,
+  pendingRows:null, pendingCols:null
+};
+let UID = 1, CANCEL = false;
+let sel = [];               // selected element ids
+let schSide = 'front';
+
+const $ = id => document.getElementById(id);
+const els = () => S.sides[S.side].els;
+const side = (k) => S.sides[k || S.side];
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const uid = () => 'e' + (UID++);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const round = (v,d=2) => Math.round(v*Math.pow(10,d))/Math.pow(10,d);
+
+function toast(msg, kind){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast on ' + (kind||'');
+  clearTimeout(t._k);
+  t._k = setTimeout(()=> t.className='toast ' + (kind||''), 2600);
+}
+
+/* ---------------- UNDO / REDO ---------------- */
+let HIST = [], HPOS = -1, histLock = false;
+function snapshot(){
+  if(histLock) return;
+  const s = JSON.stringify({card:S.card, twoSided:S.twoSided, sides:S.sides});
+  if(HIST[HPOS] === s) return;
+  HIST = HIST.slice(0, HPOS+1);
+  HIST.push(s);
+  if(HIST.length > 60){ HIST.shift(); } else HPOS++;
+  HPOS = HIST.length - 1;
+  updUndoBtns();
+}
+function restore(s){
+  const o = JSON.parse(s);
+  S.card = o.card; S.twoSided = o.twoSided; S.sides = o.sides;
+  sel = [];
+  histLock = true;
+  syncSizeInputs(); syncSideUI();
+  histLock = false;
+  refreshAll();
+}
+function undo(){ if(HPOS>0){ HPOS--; restore(HIST[HPOS]); updUndoBtns(); toast('Undo'); } }
+function redo(){ if(HPOS<HIST.length-1){ HPOS++; restore(HIST[HPOS]); updUndoBtns(); toast('Redo'); } }
+function updUndoBtns(){ $('btnUndo').disabled = HPOS<=0; $('btnRedo').disabled = HPOS>=HIST.length-1; }
+
+/* ---------------- ASSET CACHE ---------------- */
+const imgCache = new Map();     // src -> HTMLImageElement (decoded)
+const KEEP = new Set();         // srcs that must never be evicted (bg, logos)
+function protectedSrcs(){
+  KEEP.clear();
+  for(const k of ['front','back']){
+    const sd = S.sides[k];
+    if(sd && sd.bg) KEEP.add(sd.bg);
+  }
+  for(const v of Object.values(S.school)) if(typeof v === 'string' && v.startsWith('data:')) KEEP.add(v);
+  return KEEP;
+}
+/* Decoded photos are heavy. Keep the cache small so 500-card batches don't
+   blow up the tab. Backgrounds and logos are always kept. */
+function trimCache(limit){
+  limit = limit || 70;
+  if(imgCache.size <= limit) return;
+  protectedSrcs();
+  for(const k of imgCache.keys()){
+    if(imgCache.size <= limit) break;
+    if(KEEP.has(k)) continue;
+    if(k.startsWith('data:image/svg')) continue;   // icons are tiny
+    imgCache.delete(k);
+  }
+}
+function releasePhoto(src){ if(!src) return; protectedSrcs(); if(!KEEP.has(src)) imgCache.delete(src); }
+function loadImage(src){
+  if(!src) return Promise.resolve(null);
+  if(imgCache.has(src)){
+    const v = imgCache.get(src);
+    return (v instanceof Promise) ? v : Promise.resolve(v);
+  }
+  const p = new Promise(res => {
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = () => { imgCache.set(src, im); res(im); };
+    im.onerror = () => { imgCache.set(src, null); res(null); };
+    im.src = src;
+  });
+  imgCache.set(src, p);
+  return p;
+}
+
+const codeCache = new Map();    // qr/barcode canvases
+function qrCanvas(text, px){
+  const key = 'q|' + text + '|' + px;
+  if(codeCache.has(key)) return codeCache.get(key);
+  const holder = document.createElement('div');
+  $('offscreen').appendChild(holder);
+  let out = null;
+  try{
+    new QRCode(holder, {text: text || ' ', width: px, height: px,
+      colorDark:'#000000', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.M});
+    const cv = holder.querySelector('canvas');
+    if(cv){ out = document.createElement('canvas'); out.width=cv.width; out.height=cv.height;
+            out.getContext('2d').drawImage(cv,0,0); }
+  }catch(e){ out = null; }
+  holder.remove();
+  if(codeCache.size > 40) codeCache.clear();
+  codeCache.set(key, out);
+  return out;
+}
+function barcodeCanvas(text, w, h, showText, fmt){
+  const key = 'b|' + text + '|' + w + '|' + h + '|' + showText + '|' + fmt;
+  if(codeCache.has(key)) return codeCache.get(key);
+  const cv = document.createElement('canvas');
+  let out = null;
+  try{
+    JsBarcode(cv, String(text || '0'), {
+      format: fmt || 'CODE128', width: Math.max(1, w/110), height: h*(showText?0.78:1),
+      displayValue: !!showText, fontSize: h*0.17, margin: 2, font:'Inter'
+    });
+    out = cv;
+  }catch(e){
+    try{ JsBarcode(cv, '0000', {format:'CODE128', width:Math.max(1,w/110), height:h, displayValue:false, margin:2}); out = cv; }
+    catch(e2){ out = null; }
+  }
+  if(codeCache.size > 40) codeCache.clear();
+  codeCache.set(key, out);
+  return out;
+}
+
+/* ---------------- FONTS ---------------- */
+const FONTS = ['DM Sans','Inter','Poppins','Roboto','Montserrat','Rubik','Oswald','Teko','Bebas Neue','Anton',
+  'Archivo Black','Playfair Display','Merriweather','Lora','Cinzel','Courier Prime',
+  'Noto Sans Devanagari','Noto Serif Devanagari'];
+let fontsReady = false;
+async function ensureFonts(){
+  if(fontsReady) return;
+  const jobs = [];
+  for(const f of FONTS){
+    for(const w of [300,400,500,600,700,800,900]){
+      jobs.push(document.fonts.load(`${w} 40px "${f}"`).catch(()=>{}));
+      jobs.push(document.fonts.load(`italic ${w} 40px "${f}"`).catch(()=>{}));
+    }
+  }
+  await Promise.all(jobs);
+  try{ await document.fonts.ready; }catch(e){}
+  fontsReady = true;
+}
+
+/* ---------------- FIELD HELPERS ---------------- */
+function studentFields(){
+  const out = [];
+  for(const k of ['front','back']){
+    if(k === 'back' && !S.twoSided) continue;
+    for(const e of S.sides[k].els){
+      if(e.src === 'student' && (e.kind === 'text' || e.kind === 'qr' || e.kind === 'barcode') && e.field)
+        if(!out.includes(e.field)) out.push(e.field);
+      if(e.kind === 'pair' && e.src === 'student' && e.field && !out.includes(e.field)) out.push(e.field);
+    }
+  }
+  return out;
+}
+function studentPhotoFields(){
+  const out = [];
+  for(const k of ['front','back']){
+    if(k === 'back' && !S.twoSided) continue;
+    for(const e of S.sides[k].els)
+      if(e.kind === 'image' && e.src === 'student' && e.field && !out.includes(e.field)) out.push(e.field);
+  }
+  return out;
+}
+function schoolTextFields(){
+  const out = [];
+  for(const k of ['front','back']){
+    if(k === 'back' && !S.twoSided) continue;
+    for(const e of S.sides[k].els){
+      if((e.kind === 'text' || e.kind === 'pair') && e.src === 'school' && e.field && !out.includes(e.field)) out.push(e.field);
+      if((e.kind === 'qr' || e.kind === 'barcode') && e.src === 'school' && e.field && !out.includes(e.field)) out.push(e.field);
+    }
+  }
+  return out;
+}
+function schoolImageFields(){
+  const out = [];
+  for(const k of ['front','back']){
+    if(k === 'back' && !S.twoSided) continue;
+    for(const e of S.sides[k].els)
+      if(e.kind === 'image' && e.src === 'school' && e.field && !out.includes(e.field)) out.push(e.field);
+  }
+  return out;
+}
+
+const SAMPLE = {
+  'Name':'Aarav Sharma','Student Name':'Aarav Sharma','Father Name':'Rajesh Sharma',
+  'Mother Name':'Sunita Sharma','Class':'10-A','Roll No':'A1024','Roll':'A1024',
+  'DOB':'14/08/2010','Blood Group':'B+','Address':'12, Civil Lines, Jaunpur','Phone':'98765 43210',
+  'Mobile':'98765 43210','Session':'2025-26','Admission No':'2019/114','Village':'Jaunpur','ID':'A1024'
+};
+function sampleFor(f){
+  if(SAMPLE[f]) return SAMPLE[f];
+  const k = Object.keys(SAMPLE).find(x => x.toLowerCase() === String(f).toLowerCase());
+  return k ? SAMPLE[k] : f;
+}
+
+/* resolve the text a text-element should show for a given student */
+function valueFor(el, stu, useSample){
+  if(el.src === 'static') return el.text || '';
+  if(el.src === 'school'){
+    const v = S.school[el.field];
+    if(v) return v;
+    return useSample ? (el.field || '') : '';
+  }
+  // student
+  if(stu && stu.data && stu.data[el.field] != null && stu.data[el.field] !== '') return stu.data[el.field];
+  return useSample ? sampleFor(el.field) : '';
+}
+
+/* ---------------- DRAW UTILITIES ---------------- */
+function rrPath(ctx, x, y, w, h, r){
+  r = Math.max(0, Math.min(r, Math.min(w, h)/2));
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);       ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r);     ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h);       ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r);         ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+function fitRect(iw, ih, bw, bh, mode){
+  if(mode === 'fill' || !iw || !ih) return {sx:0, sy:0, sw:iw||1, sh:ih||1, dx:0, dy:0, dw:bw, dh:bh};
+  const ir = iw/ih, br = bw/bh;
+  if(mode === 'cover'){
+    let sw = iw, sh = ih;
+    if(ir > br) sw = ih*br; else sh = iw/br;
+    return {sx:(iw-sw)/2, sy:(ih-sh)/2, sw, sh, dx:0, dy:0, dw:bw, dh:bh};
+  }
+  // contain
+  let dw = bw, dh = bh;
+  if(ir > br) dh = bw/ir; else dw = bh*ir;
+  return {sx:0, sy:0, sw:iw, sh:ih, dx:(bw-dw)/2, dy:(bh-dh)/2, dw, dh};
+}
+function fontStr(el, sizePx){
+  const fam = el.font || 'Poppins';
+  return `${el.italic ? 'italic ' : ''}${el.weight || 500} ${sizePx}px "${fam}", "Noto Sans Devanagari", sans-serif`;
+}
+function applyCaps(t, caps){
+  if(caps === 'upper') return String(t).toUpperCase();
+  if(caps === 'lower') return String(t).toLowerCase();
+  if(caps === 'title') return String(t).replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+  return String(t);
+}
+function wrapLines(ctx, text, maxW, allowWrap){
+  const paras = String(text).split(/\r?\n/);
+  const out = [];
+  for(const p of paras){
+    if(!allowWrap){ out.push(p); continue; }
+    const words = p.split(/\s+/).filter(Boolean);
+    if(!words.length){ out.push(''); continue; }
+    let line = words[0];
+    for(let i=1;i<words.length;i++){
+      const t = line + ' ' + words[i];
+      if(ctx.measureText(t).width <= maxW) line = t;
+      else { out.push(line); line = words[i]; }
+    }
+    out.push(line);
+  }
+  return out;
+}
+function setLS(ctx, px){ try{ ctx.letterSpacing = px + 'px'; }catch(e){} }
+
+/* ---------------- TEXT LAYOUT (shared by every renderer) ----------------
+   Every measurement happens at one canonical scale (CANON px per mm) and the
+   result is scaled to whatever the caller needs. That is why the design
+   canvas, the preview grid and the 300-dpi export all break lines in the
+   same place and shrink text by the same amount. Measuring at the target
+   scale instead would let a 0.5 px tolerance mean different things at 2 px/mm
+   and at 12 px/mm, which is exactly how text drifts between preview and print. */
+const CANON = 12;
+const layoutCache = new Map();
+
+function layoutText(ctx, el, raw, boxW, boxH, s){
+  const boxWmm = boxW / s, boxHmm = boxH / s;
+  const padXmm = el.padX || 0, padYmm = el.padY || 0;
+  const lh = el.lh || 1.2;
+  const text = applyCaps(raw, el.caps);
+
+  const key = [text, el.font, el.weight, el.italic ? 1 : 0, el.size, el.ls || 0, lh,
+               el.wrap !== false ? 1 : 0, el.fit, el.maxLines || 0,
+               round(boxWmm, 2), round(boxHmm, 2), padXmm, padYmm].join('|');
+
+  let hit = layoutCache.get(key);
+  if(!hit){
+    const innerW = Math.max(1, (boxWmm - padXmm*2) * CANON);
+    const innerH = Math.max(1, (boxHmm - padYmm*2) * CANON);
+    const minSize = 0.6 * CANON;              // never shrink below 0.6 mm
+    let size = Math.max(1, (el.size || 3) * CANON);
+    let lines;
+    setLS(ctx, (el.ls || 0) * CANON);
+    for(let guard = 0; guard < 200; guard++){
+      ctx.font = fontStr(el, size);
+      lines = wrapLines(ctx, text, innerW, el.wrap !== false);
+      let widest = 0;
+      for(const l of lines) widest = Math.max(widest, ctx.measureText(l).width);
+      const totalH = lines.length * size * lh;
+      const overflow = (widest > innerW + 0.05) || (totalH > innerH + 0.05);
+      if(!overflow || el.fit !== 'shrink' || size <= minSize) break;
+      size *= 0.975;
+    }
+    if(el.fit === 'clip' && el.maxLines) lines = lines.slice(0, el.maxLines);
+    hit = {lines, sizeMm: size / CANON};
+    if(layoutCache.size > 3000) layoutCache.clear();
+    layoutCache.set(key, hit);
+  }
+  return {lines: hit.lines, size: hit.sizeMm * s, lh, padX: padXmm * s, padY: padYmm * s};
+}
+
+/* ---------------- ELEMENT DRAW ---------------- */
+function drawElement(ctx, el, stu, s, useSample, W, H){
+  if(el.hidden) return;
+  const x = el.x/100*W, y = el.y/100*H, w = el.w/100*W, h = el.h/100*H;
+  ctx.save();
+  if(el.rot){
+    ctx.translate(x + w/2, y + h/2);
+    ctx.rotate(el.rot * Math.PI/180);
+    ctx.translate(-(x + w/2), -(y + h/2));
+  }
+  ctx.globalAlpha = el.opacity == null ? 1 : el.opacity;
+
+  if(el.kind === 'shape'){
+    const sw = (el.strokeW || 0) * s;
+    if(el.shape === 'line'){
+      ctx.strokeStyle = el.fill || '#000';
+      ctx.lineWidth = Math.max(0.4, h);
+      ctx.lineCap = el.cap || 'butt';
+      ctx.beginPath(); ctx.moveTo(x, y + h/2); ctx.lineTo(x + w, y + h/2); ctx.stroke();
+    } else if(el.shape === 'circle'){
+      ctx.beginPath(); ctx.ellipse(x + w/2, y + h/2, w/2, h/2, 0, 0, Math.PI*2);
+      if(el.fill){ ctx.fillStyle = el.fill; ctx.fill(); }
+      if(sw > 0 && el.stroke){ ctx.lineWidth = sw; ctx.strokeStyle = el.stroke; ctx.stroke(); }
+    } else {
+      rrPath(ctx, x, y, w, h, (el.radius || 0) * s);
+      if(el.fill){ ctx.fillStyle = el.fill; ctx.fill(); }
+      if(sw > 0 && el.stroke){ ctx.lineWidth = sw; ctx.strokeStyle = el.stroke; ctx.stroke(); }
+    }
+    ctx.restore(); return;
+  }
+
+  if(el.kind === 'image'){
+    let src = null;
+    if(el.src === 'school') src = S.school[el.field] || null;
+    else {
+      if(stu && stu.photo) src = stu.photo;
+      else if(useSample) src = null;
+    }
+    const im = src ? imgCache.get(src) : null;
+    const rad = el.shape === 'circle' ? Math.min(w,h)/2 : (el.radius || 0) * s;
+    ctx.save();
+    if(el.shape === 'circle'){ ctx.beginPath(); ctx.ellipse(x+w/2, y+h/2, w/2, h/2, 0, 0, Math.PI*2); ctx.clip(); }
+    else if(rad > 0){ rrPath(ctx, x, y, w, h, rad); ctx.clip(); }
+    if(el.boxFill){ ctx.fillStyle = el.boxFill; ctx.fillRect(x, y, w, h); }
+    if(im && im.naturalWidth){
+      const f = fitRect(im.naturalWidth, im.naturalHeight, w, h, el.fit || 'cover');
+      ctx.drawImage(im, f.sx, f.sy, f.sw, f.sh, x + f.dx, y + f.dy, f.dw, f.dh);
+    } else {
+      // placeholder
+      ctx.fillStyle = 'rgba(0,0,0,.07)'; ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = 'rgba(0,0,0,.42)';
+      ctx.font = `500 ${Math.max(5, Math.min(w,h)*0.13)}px "Inter", sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(el.src === 'student' ? 'PHOTO' : (el.field || 'LOGO'), x + w/2, y + h/2);
+      ctx.setLineDash([Math.max(1.5, s), Math.max(1.5, s)]);
+      ctx.strokeStyle = 'rgba(0,0,0,.28)'; ctx.lineWidth = Math.max(0.5, 0.25*s);
+      ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
+    }
+    ctx.restore();
+    if(el.borderW > 0 && el.borderC){
+      ctx.lineWidth = el.borderW * s; ctx.strokeStyle = el.borderC;
+      if(el.shape === 'circle'){ ctx.beginPath(); ctx.ellipse(x+w/2, y+h/2, w/2 - ctx.lineWidth/2, h/2 - ctx.lineWidth/2, 0, 0, Math.PI*2); ctx.stroke(); }
+      else { rrPath(ctx, x + ctx.lineWidth/2, y + ctx.lineWidth/2, w - ctx.lineWidth, h - ctx.lineWidth, Math.max(0, rad - ctx.lineWidth/2)); ctx.stroke(); }
+    }
+    ctx.restore(); return;
+  }
+
+  if(el.kind === 'qr' || el.kind === 'barcode'){
+    let txt = el.src === 'static' ? (el.text || '') : valueFor(el, stu, useSample);
+    if(el.pattern) txt = fillPattern(el.pattern, stu, useSample);
+    if(el.boxFill){ ctx.fillStyle = el.boxFill; ctx.fillRect(x, y, w, h); }
+    const cv = el.kind === 'qr'
+      ? qrCanvas(String(txt || ' '), 512)
+      : barcodeCanvas(String(txt || '0'), 600, 200, el.showText !== false, el.bcFormat);
+    if(cv){
+      const f = fitRect(cv.width, cv.height, w, h, 'contain');
+      if(el.color && el.color !== '#000000'){
+        const tmp = document.createElement('canvas'); tmp.width = cv.width; tmp.height = cv.height;
+        const tc = tmp.getContext('2d'); tc.drawImage(cv, 0, 0);
+        tc.globalCompositeOperation = 'source-in'; tc.fillStyle = el.color; tc.fillRect(0,0,tmp.width,tmp.height);
+        ctx.drawImage(tmp, x + f.dx, y + f.dy, f.dw, f.dh);
+      } else ctx.drawImage(cv, x + f.dx, y + f.dy, f.dw, f.dh);
+    }
+    ctx.restore(); return;
+  }
+
+  if(el.kind === 'icon'){
+    const src = iconDataURL(el.icon, el.color || '#16222F');
+    const im = imgCache.get(src);
+    if(im) { const f = fitRect(im.naturalWidth || 24, im.naturalHeight || 24, w, h, 'contain');
+             ctx.drawImage(im, x + f.dx, y + f.dy, f.dw, f.dh); }
+    ctx.restore(); return;
+  }
+
+  /* ---- text & pair ---- */
+  let raw;
+  if(el.kind === 'pair'){
+    const v = valueFor(el, stu, useSample);
+    raw = (el.label || '') + (el.sepText == null ? ': ' : el.sepText) + (el.prefix||'') + v + (el.suffix||'');
+  } else {
+    raw = (el.prefix || '') + valueFor(el, stu, useSample) + (el.suffix || '');
+  }
+  if(el.boxFill || (el.borderW > 0 && el.borderC)){
+    rrPath(ctx, x, y, w, h, (el.radius || 0) * s);
+    if(el.boxFill){ ctx.fillStyle = el.boxFill; ctx.fill(); }
+    if(el.borderW > 0 && el.borderC){ ctx.lineWidth = el.borderW * s; ctx.strokeStyle = el.borderC; ctx.stroke(); }
+  }
+  if(raw === '' ) { ctx.restore(); return; }
+
+  const L = layoutText(ctx, el, raw, w, h, s);
+  ctx.save();
+  rrPath(ctx, x, y, w, h, (el.radius || 0) * s); ctx.clip();
+  ctx.font = fontStr(el, L.size);
+  setLS(ctx, (el.ls || 0) * s);
+  ctx.fillStyle = el.color || '#16222F';
+  ctx.textBaseline = 'alphabetic';
+  const blockH = L.lines.length * L.size * L.lh;
+  let startY;
+  if(el.valign === 'top') startY = y + L.padY;
+  else if(el.valign === 'bottom') startY = y + h - L.padY - blockH;
+  else startY = y + (h - blockH)/2;
+
+  if(el.shadow){
+    ctx.shadowColor = 'rgba(0,0,0,.42)';
+    ctx.shadowBlur = Math.max(1, 0.35*s);
+    ctx.shadowOffsetY = Math.max(0.5, 0.2*s);
+  }
+  for(let i = 0; i < L.lines.length; i++){
+    const line = L.lines[i];
+    const lw = ctx.measureText(line).width;
+    let lx;
+    if(el.align === 'center') lx = x + (w - lw)/2;
+    else if(el.align === 'right') lx = x + w - L.padX - lw;
+    else lx = x + L.padX;
+    const ly = startY + i*L.size*L.lh + L.size*0.80;
+    if(el.strokeW > 0 && el.strokeC){
+      ctx.lineWidth = el.strokeW * s; ctx.strokeStyle = el.strokeC;
+      ctx.lineJoin = 'round'; ctx.strokeText(line, lx, ly);
+    }
+    ctx.fillText(line, lx, ly);
+  }
+  ctx.restore();
+  if(el.underline){
+    ctx.save();
+    ctx.strokeStyle = el.color || '#16222F';
+    ctx.lineWidth = Math.max(0.5, L.size*0.06);
+    const lastY = startY + (L.lines.length-1)*L.size*L.lh + L.size*0.94;
+    const lw = ctx.measureText(L.lines[L.lines.length-1] || '').width;
+    let lx = el.align === 'center' ? x + (w-lw)/2 : el.align === 'right' ? x + w - L.padX - lw : x + L.padX;
+    ctx.beginPath(); ctx.moveTo(lx, lastY); ctx.lineTo(lx + lw, lastY); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function fillPattern(pat, stu, useSample){
+  return String(pat).replace(/\{([^}]+)\}/g, (m, key) => {
+    const k = key.trim();
+    if(stu && stu.data){
+      const hit = Object.keys(stu.data).find(f => f.toLowerCase() === k.toLowerCase());
+      if(hit) return stu.data[hit];
+    }
+    const sk = Object.keys(S.school).find(f => f.toLowerCase() === k.toLowerCase());
+    if(sk && typeof S.school[sk] === 'string' && !S.school[sk].startsWith('data:')) return S.school[sk];
+    return useSample ? sampleFor(k) : '';
+  });
+}
+
+/* ---------------- MAIN CARD PAINTER ---------------- */
+/* s = pixels per millimetre. Everything else derives from it. */
+function paintCard(ctx, sideKey, stu, s, opts){
+  opts = opts || {};
+  const sd = S.sides[sideKey];
+  const W = S.card.w * s, H = S.card.h * s;
+  const useSample = !!opts.sample;
+
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+  if(!opts.noRound) { rrPath(ctx, 0, 0, W, H, (S.card.r || 0) * s); ctx.clip(); }
+  ctx.fillStyle = sd.base || '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  const bg = sd.bg ? imgCache.get(sd.bg) : null;
+  if(bg && bg.naturalWidth){
+    const f = fitRect(bg.naturalWidth, bg.naturalHeight, W, H, sd.bgFit || 'fill');
+    ctx.drawImage(bg, f.sx, f.sy, f.sw, f.sh, f.dx, f.dy, f.dw, f.dh);
+  }
+
+  const list = sd.els.slice();
+  for(const el of list) drawElement(ctx, el, stu, s, useSample, W, H);
+  ctx.restore();
+}
+
+/* collect every image src a card needs, then preload */
+function cardSrcs(sideKey, stu){
+  const out = [];
+  const sd = S.sides[sideKey];
+  if(sd.bg) out.push(sd.bg);
+  for(const el of sd.els){
+    if(el.kind === 'image'){
+      if(el.src === 'school' && S.school[el.field]) out.push(S.school[el.field]);
+      if(el.src === 'student' && stu && stu.photo) out.push(stu.photo);
+    }
+    if(el.kind === 'icon') out.push(iconDataURL(el.icon, el.color || '#16222F'));
+  }
+  return out;
+}
+async function prepCard(sideKey, stu){
+  await ensureFonts();
+  trimCache();
+  await Promise.all(cardSrcs(sideKey, stu).map(loadImage));
+}
+
+/* render a card to a fresh canvas at given DPI */
+async function renderCardCanvas(sideKey, stu, pxPerMm, sample, flatten){
+  await prepCard(sideKey, stu);
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(S.card.w * pxPerMm);
+  cv.height = Math.round(S.card.h * pxPerMm);
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  /* JPEG and PDF have no transparency — without this the rounded corners
+     would come out black instead of paper-white. */
+  if(flatten){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cv.width, cv.height); }
+  paintCard(ctx, sideKey, stu, pxPerMm, {sample:!!sample});
+  return cv;
+}
+</script>
+<script>
+/* ---------------- ICON LIBRARY ---------------- */
+const ICONS = {
+  phone:'M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2z',
+  mail:'M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z',
+  pin:'M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z',
+  globe:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 6h-2.9a15.6 15.6 0 0 0-1.4-3.6A8 8 0 0 1 18.9 8zM12 4c.8 1.1 1.4 2.5 1.8 4h-3.6c.4-1.5 1-2.9 1.8-4zM4.3 14A8 8 0 0 1 4 12c0-.7.1-1.4.3-2h3.3a16.6 16.6 0 0 0 0 4H4.3zm.8 2h2.9c.3 1.3.8 2.5 1.4 3.6A8 8 0 0 1 5.1 16zm2.9-8H5.1a8 8 0 0 1 4.3-3.6A15.6 15.6 0 0 0 8 8zM12 20c-.8-1.1-1.4-2.5-1.8-4h3.6c-.4 1.5-1 2.9-1.8 4zm2.2-6H9.8a14 14 0 0 1 0-4h4.4a14 14 0 0 1 0 4zm.4 5.6c.6-1.1 1.1-2.3 1.4-3.6h2.9a8 8 0 0 1-4.3 3.6zm1.8-5.6a16.6 16.6 0 0 0 0-4h3.3c.2.6.3 1.3.3 2s-.1 1.4-.3 2h-3.3z',
+  facebook:'M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.7l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z',
+  instagram:'M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4 1 .5.4.8.8 1 1.4.2.4.3 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-1 1.4-.4.5-.8.8-1.4 1-.4.2-1 .3-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-1-.5-.4-.8-.8-1-1.4-.2-.4-.3-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.2-1.8.4-2.2.2-.6.5-1 1-1.4.4-.5.8-.8 1.4-1 .4-.2 1-.3 2.2-.4 1.3-.1 1.7-.1 4.9-.1zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.2A3.2 3.2 0 1 1 12 8.8a3.2 3.2 0 0 1 0 6.4zM17.2 5.6a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z',
+  whatsapp:'M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.4A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.5.7.7-2.4-.2-.3A8 8 0 0 1 12 4zm4.3 10.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3 0-.5l-.7-1.6c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.5.1-.7.3-.8.8-.9 1.9-.2 3.1a10 10 0 0 0 4 3.9c1.6.7 2.6.7 3.3.4.5-.2 1.1-.8 1.2-1.3.1-.4.1-.7 0-.8l-.4-.2z',
+  youtube:'M23 12s0-3.2-.4-4.7a2.5 2.5 0 0 0-1.8-1.8C19.3 5 12 5 12 5s-7.3 0-8.8.5A2.5 2.5 0 0 0 1.4 7.3C1 8.8 1 12 1 12s0 3.2.4 4.7c.2.9.9 1.6 1.8 1.8C4.7 19 12 19 12 19s7.3 0 8.8-.5a2.5 2.5 0 0 0 1.8-1.8C23 15.2 23 12 23 12zM9.8 15.1V8.9l6.1 3.1-6.1 3.1z',
+  x:'M18.2 2h3.4l-7.4 8.5L23 22h-6.8l-5.3-7-6.1 7H1.4l7.9-9.1L1 2h7l4.8 6.4L18.2 2zm-1.2 18h1.9L7.1 4H5.1L17 20z',
+  calendar:'M7 2v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm12 8v9H5v-9h14z',
+  blood:'M12 2s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11zm0 16a4 4 0 0 0 4-4h-2a2 2 0 0 1-2 2v2z',
+  user:'M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4 0-9 2-9 5v3h18v-3c0-3-5-5-9-5z',
+  idcard:'M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM8 8a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm4.5 9h-9v-.7c0-1.5 3-2.3 4.5-2.3s4.5.8 4.5 2.3v.7zM19 15h-4v-2h4v2zm0-4h-4V9h4v2z',
+  cap:'M12 3 1 9l11 6 9-4.9V17h2V9L12 3zM5 13.2V17c0 1.7 3.1 3 7 3s7-1.3 7-3v-3.8l-7 3.8-7-3.8z',
+  book:'M6 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14V2H6zm0 2h12v12H6a3 3 0 0 0-1 .2V5a1 1 0 0 1 1-1zm0 14h12v2H6a1 1 0 0 1 0-2z',
+  bus:'M6 2h12a3 3 0 0 1 3 3v11a2 2 0 0 1-1 1.7V20a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2.3A2 2 0 0 1 3 16V5a3 3 0 0 1 3-3zm-1 4v6h14V6H5zm2.5 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm9 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
+  star:'M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6 12 2z',
+  shield:'M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3zm0 4 5 1.9V11c0 3.5-2.1 6.9-5 8-2.9-1.1-5-4.5-5-8V7.9L12 6z',
+  award:'M12 2a6 6 0 1 0 0 12A6 6 0 0 0 12 2zm-3.5 12.6L7 22l5-2.5L17 22l-1.5-7.4a8 8 0 0 1-7 0z',
+  clock:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.6 4 2.3-1 1.7-5-2.9V6h2v6.6z',
+  home:'M12 3 2 12h3v8h6v-5h2v5h6v-8h3L12 3z'
+};
+const iconURLCache = new Map();
+function iconDataURL(name, color){
+  const key = name + '|' + color;
+  if(iconURLCache.has(key)) return iconURLCache.get(key);
+  const p = ICONS[name] || ICONS.star;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="240" height="240"><path fill="${color}" d="${p}"/></svg>`;
+  const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  iconURLCache.set(key, url);
+  return url;
+}
+const ICON_GROUPS = {
+  iconsSocial:['facebook','instagram','whatsapp','youtube','x','globe'],
+  iconsInfo:['phone','mail','pin','calendar','clock','blood','user','idcard'],
+  iconsMisc:['cap','book','bus','star','shield','award','home']
+};
+function buildIconPicker(){
+  for(const gid in ICON_GROUPS){
+    const box = $(gid); box.innerHTML = '';
+    for(const n of ICON_GROUPS[gid]){
+      const b = document.createElement('button');
+      b.className = 'icon-btn';
+      b.innerHTML = `<svg viewBox="0 0 24 24"><path d="${ICONS[n]}"/></svg><span>${n}</span>`;
+      b.onclick = () => { addIcon(n); closeIconPicker(); };
+      box.appendChild(b);
+    }
+  }
+}
+function openIconPicker(){ $('iconOvl').classList.add('on'); }
+function closeIconPicker(){ $('iconOvl').classList.remove('on'); }
+
+/* ---------------- ELEMENT FACTORY ---------------- */
+function baseEl(kind, o){
+  return Object.assign({
+    id: uid(), kind, name:'', x:10, y:10, w:60, h:8, rot:0, opacity:1,
+    hidden:false, locked:false, group:null
+  }, o);
+}
+function pushEl(e){
+  els().push(e);
+  sel = [e.id];
+  snapshot();
+  refreshAll();
+  return e;
+}
+function nextFreeY(){
+  const list = els();
+  if(!list.length) return 6;
+  const maxB = Math.max(...list.map(e => e.y + e.h));
+  return clamp(maxB + 2, 2, 88);
+}
+
+function addText(src){
+  const fields = src === 'student' ? ['Name','Class','Roll No','Father Name','DOB'] : ['School Name','Address','Phone'];
+  const used = src === 'student' ? studentFields() : schoolTextFields();
+  const field = fields.find(f => !used.includes(f)) || (src === 'student' ? 'Field ' + (used.length+1) : 'School ' + (used.length+1));
+  const isPair = src === 'pair';
+  const e = baseEl(isPair ? 'pair' : 'text', {
+    src: isPair ? 'student' : src,
+    field: (src === 'static') ? '' : (isPair ? 'Class' : field),
+    text: src === 'static' ? 'Fixed text' : '',
+    label: isPair ? 'Class' : '',
+    sepText: ': ',
+    x:8, y:nextFreeY(), w:84, h:7,
+    font:'Poppins', size:3.2, weight:600, italic:false, color:'#16222F',
+    align: 'left', valign:'middle', ls:0, lh:1.2, caps:'none',
+    wrap:false, fit:'shrink', maxLines:1, padX:0.4, padY:0.2, radius:0,
+    boxFill:'', borderW:0, borderC:'#16222F', shadow:false, underline:false, strokeW:0, strokeC:'#ffffff',
+    prefix:'', suffix:''
+  });
+  e.name = isPair ? 'Pair · ' + e.label : (src === 'static' ? 'Text · Fixed' : (src === 'student' ? 'Student · ' : 'School · ') + e.field);
+  pushEl(e);
+}
+
+function addImg(src){
+  const used = src === 'student' ? studentPhotoFields() : schoolImageFields();
+  const field = src === 'student' ? 'Photo' : (['Logo','Principal Sign','Seal'].find(f => !used.includes(f)) || 'Image ' + (used.length+1));
+  const e = baseEl('image', {
+    src, field,
+    x: src === 'student' ? 30 : 6, y: src === 'student' ? 14 : 4,
+    w: src === 'student' ? 40 : 16, h: src === 'student' ? 26 : 10,
+    fit:'cover', shape:'rect', radius:1, borderW:0.4, borderC:'#ffffff', boxFill:''
+  });
+  e.name = (src === 'student' ? 'Photo · ' : 'Logo · ') + field;
+  pushEl(e);
+}
+
+function addShape(shape){
+  const e = baseEl('shape', {
+    shape,
+    x: shape === 'line' ? 8 : 10, y: nextFreeY(),
+    w: shape === 'circle' ? 20 : 84,
+    h: shape === 'line' ? 0.5 : (shape === 'circle' ? 20 : 8),
+    fill: shape === 'line' ? '#16222F' : '#2563A8',
+    stroke:'#16222F', strokeW:0, radius:1, cap:'round'
+  });
+  if(shape === 'circle') e.h = e.w * (S.card.w / S.card.h);
+  e.name = 'Shape · ' + shape;
+  pushEl(e);
+}
+
+function addBadge(){
+  const y = nextFreeY();
+  const g = 'g' + (UID++);
+  const r = baseEl('shape', {shape:'rect', x:26, y, w:48, h:7, fill:'#0E7C6B', radius:1.6, strokeW:0, stroke:'#000', group:g, name:'Badge bg'});
+  const t = baseEl('text', {
+    src:'student', field:'Class', x:26, y, w:48, h:7, font:'Poppins', size:3.2, weight:700,
+    color:'#ffffff', align:'center', valign:'middle', ls:0, lh:1.2, caps:'upper', wrap:false,
+    fit:'shrink', padX:1, padY:0.3, radius:0, boxFill:'', borderW:0, borderC:'#000',
+    prefix:'', suffix:'', group:g, name:'Badge text'
+  });
+  els().push(r, t);
+  sel = [r.id, t.id];
+  snapshot(); refreshAll();
+}
+
+function addStrip(){
+  const y = nextFreeY();
+  const g = 'g' + (UID++);
+  const l = baseEl('shape', {shape:'line', x:56, y:y+6, w:36, h:0.35, fill:'#16222F', group:g, name:'Sign line'});
+  const t = baseEl('text', {
+    src:'static', text:'Principal', x:56, y:y+6.4, w:36, h:5, font:'Inter', size:2.4, weight:500,
+    color:'#16222F', align:'center', valign:'top', ls:0, lh:1.15, caps:'none', wrap:false, fit:'shrink',
+    padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', group:g, name:'Sign label'
+  });
+  els().push(l, t);
+  sel = [l.id, t.id];
+  snapshot(); refreshAll();
+}
+
+function addCode(kind){
+  const e = baseEl(kind, {
+    src:'student', field: studentFields()[0] || 'Roll No',
+    pattern:'', x: kind === 'qr' ? 66 : 14, y: nextFreeY(),
+    w: kind === 'qr' ? 26 : 72, h: kind === 'qr' ? 26*(S.card.w/S.card.h) : 12,
+    color:'#000000', boxFill:'#ffffff', showText:true, bcFormat:'CODE128'
+  });
+  e.name = kind === 'qr' ? 'QR code' : 'Barcode';
+  pushEl(e);
+}
+
+function addIcon(name){
+  const e = baseEl('icon', {icon:name, x:6, y:nextFreeY(), w:7, h:7*(S.card.w/S.card.h), color:'#16222F'});
+  e.name = 'Icon · ' + name;
+  pushEl(e);
+}
+
+/* ---------------- STAGE RENDER ---------------- */
+let stagePxPerMm = 4;
+function stageScale(){ return 4 * S.zoom; }
+
+async function drawStage(){
+  const sd = side();
+  const s = stageScale();
+  const cv = $('stageCv');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = S.card.w * s, H = S.card.h * s;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingQuality = 'high';
+
+  const sample = $('sampleOn').checked;
+  await prepCard(S.side, null);
+  paintCard(ctx, S.side, null, s, {sample});
+
+  // guides
+  if($('showGuides').checked){
+    const safe = parseFloat($('cardSafe').value) || 0;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(37,99,168,.5)';
+    ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+    ctx.strokeRect(safe*s, safe*s, W - safe*s*2, H - safe*s*2);
+    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(194,59,46,.28)';
+    ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H);
+    ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+    ctx.restore();
+  }
+  $('stageOuter').style.width = W + 'px';
+  $('stageOuter').style.height = H + 'px';
+  buildOverlay();
+  $('zoomLbl').textContent = Math.round(S.zoom*100) + '%';
+}
+
+function buildOverlay(){
+  const ovl = $('stageOvl');
+  ovl.innerHTML = '';
+  const list = els();
+  for(const e of list){
+    if(e.hidden) continue;
+    const d = document.createElement('div');
+    d.className = 'el' + (sel[0] === e.id && sel.length === 1 ? ' sel' : (sel.includes(e.id) ? ' msel' : '')) + (e.locked ? ' lock' : '');
+    d.style.left = e.x + '%'; d.style.top = e.y + '%';
+    d.style.width = e.w + '%'; d.style.height = e.h + '%';
+    if(e.rot) d.style.transform = `rotate(${e.rot}deg)`;
+    d.dataset.id = e.id;
+    if(sel.includes(e.id) && sel.length === 1 && !e.locked){
+      for(const h of ['nw','ne','sw','se','n','s','w','e']){
+        const hd = document.createElement('div');
+        hd.className = 'hnd ' + h; hd.dataset.h = h;
+        d.appendChild(hd);
+      }
+      const rt = document.createElement('div');
+      rt.className = 'hnd rot'; rt.dataset.h = 'rot';
+      d.appendChild(rt);
+    }
+    ovl.appendChild(d);
+  }
+}
+
+/* ---------------- STAGE INTERACTION ---------------- */
+let drag = null;
+$('stageOvl').addEventListener('pointerdown', e => {
+  const hnd = e.target.closest('.hnd');
+  const box = e.target.closest('.el');
+  if(!box){ if(!e.shiftKey){ sel = []; refreshSelUI(); } return; }
+  const id = box.dataset.id;
+  const el = els().find(x => x.id === id);
+  if(!el) return;
+
+  if(e.shiftKey && !hnd){
+    if(sel.includes(id)) sel = sel.filter(x => x !== id); else sel.push(id);
+    refreshSelUI(); return;
+  }
+  if(!sel.includes(id)){ sel = [id]; refreshSelUI(); }
+  if(el.locked) return;
+
+  const s = stageScale();
+  const group = el.group ? els().filter(x => x.group === el.group).map(x => x.id)
+                         : (sel.length > 1 ? sel.slice() : [id]);
+  drag = {
+    mode: hnd ? (hnd.dataset.h === 'rot' ? 'rot' : 'resize') : 'move',
+    handle: hnd ? hnd.dataset.h : null,
+    startX: e.clientX, startY: e.clientY, s,
+    ids: hnd ? [id] : group,
+    orig: {}
+  };
+  for(const i of drag.ids){
+    const o = els().find(x => x.id === i);
+    drag.orig[i] = {x:o.x, y:o.y, w:o.w, h:o.h, rot:o.rot||0};
+  }
+  $('stageOvl').setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+
+window.addEventListener('pointermove', e => {
+  if(!drag) return;
+  const s = drag.s;
+  const dxPct = (e.clientX - drag.startX) / (S.card.w * s) * 100;
+  const dyPct = (e.clientY - drag.startY) / (S.card.h * s) * 100;
+
+  if(drag.mode === 'move'){
+    let ddx = dxPct, ddy = dyPct;
+    if(e.shiftKey){ if(Math.abs(dxPct) > Math.abs(dyPct)) ddy = 0; else ddx = 0; }
+    // snap
+    if($('snapOn').checked && drag.ids.length === 1){
+      const el = els().find(x => x.id === drag.ids[0]);
+      const o = drag.orig[drag.ids[0]];
+      const sn = computeSnap(el, o.x + ddx, o.y + ddy, o.w, o.h);
+      ddx = sn.x - o.x; ddy = sn.y - o.y;
+    }
+    for(const i of drag.ids){
+      const el = els().find(x => x.id === i), o = drag.orig[i];
+      el.x = round(clamp(o.x + ddx, -20, 118), 3);
+      el.y = round(clamp(o.y + ddy, -20, 118), 3);
+    }
+  } else if(drag.mode === 'resize'){
+    const i = drag.ids[0], el = els().find(x => x.id === i), o = drag.orig[i];
+    const h = drag.handle;
+    let nx = o.x, ny = o.y, nw = o.w, nh = o.h;
+    if(h.includes('e')) nw = o.w + dxPct;
+    if(h.includes('w')){ nw = o.w - dxPct; nx = o.x + dxPct; }
+    if(h.includes('s')) nh = o.h + dyPct;
+    if(h.includes('n')){ nh = o.h - dyPct; ny = o.y + dyPct; }
+    if(e.shiftKey && (h.length === 2)){
+      const ar = o.w / o.h;
+      nh = nw / ar;
+      if(h.includes('n')) ny = o.y + (o.h - nh);
+    }
+    if(nw < 1){ nw = 1; nx = o.x; }
+    if(nh < 0.4){ nh = 0.4; ny = o.y; }
+    el.x = round(nx,3); el.y = round(ny,3); el.w = round(nw,3); el.h = round(nh,3);
+  } else if(drag.mode === 'rot'){
+    const i = drag.ids[0], el = els().find(x => x.id === i), o = drag.orig[i];
+    const rect = $('stageCv').getBoundingClientRect();
+    const cx = rect.left + (o.x + o.w/2)/100*rect.width;
+    const cy = rect.top + (o.y + o.h/2)/100*rect.height;
+    let ang = Math.atan2(e.clientY - cy, e.clientX - cx) * 180/Math.PI + 90;
+    if(e.shiftKey) ang = Math.round(ang/15)*15;
+    el.rot = round(ang, 1);
+  }
+  liveDraw();
+  readCoord();
+});
+
+window.addEventListener('pointerup', () => {
+  if(drag){ drag = null; snapshot(); refreshAll(); }
+});
+
+let rafPending = false;
+function liveDraw(){
+  if(rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; drawStage(); });
+}
+
+function computeSnap(el, x, y, w, h){
+  const TOL = 0.9;   // percent
+  const xs = [0, 50, 100], ys = [0, 50, 100];
+  for(const o of els()){
+    if(o.id === el.id || o.hidden) continue;
+    xs.push(o.x, o.x + o.w/2, o.x + o.w);
+    ys.push(o.y, o.y + o.h/2, o.y + o.h);
+  }
+  const cand = [[x, 0], [x + w/2, w/2], [x + w, w]];
+  let bx = x, bd = TOL;
+  for(const [v, off] of cand) for(const t of xs)
+    if(Math.abs(v - t) < bd){ bd = Math.abs(v - t); bx = t - off; }
+  const candY = [[y, 0], [y + h/2, h/2], [y + h, h]];
+  let by = y, bdy = TOL;
+  for(const [v, off] of candY) for(const t of ys)
+    if(Math.abs(v - t) < bdy){ bdy = Math.abs(v - t); by = t - off; }
+  return {x: bx, y: by};
+}
+
+function readCoord(){
+  const e = els().find(x => x.id === sel[0]);
+  if(!e){ $('coordRead').textContent = 'Click element → drag to move · arrow keys nudge · Shift+arrow = 10×'; return; }
+  const mm = v => round(v, 1);
+  $('coordRead').innerHTML = `<b>${esc(e.name || e.kind)}</b> · X ${mm(e.x/100*S.card.w)}mm · Y ${mm(e.y/100*S.card.h)}mm · W ${mm(e.w/100*S.card.w)}mm · H ${mm(e.h/100*S.card.h)}mm`;
+}
+
+/* ---------------- KEYBOARD ---------------- */
+let clipboard = null;
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
+  const ctrl = e.ctrlKey || e.metaKey;
+
+  if(ctrl && e.key.toLowerCase() === 'z' && !e.shiftKey){ if(!typing){ e.preventDefault(); undo(); } return; }
+  if(ctrl && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))){ if(!typing){ e.preventDefault(); redo(); } return; }
+  if(ctrl && e.key.toLowerCase() === 's'){ e.preventDefault(); saveProject(); return; }
+  if(typing) return;
+  if(!$('p0').classList.contains('on')) return;
+
+  if(ctrl && e.key.toLowerCase() === 'c' && sel.length){ clipboard = sel.map(i => JSON.parse(JSON.stringify(els().find(x => x.id === i)))); toast('Copied'); return; }
+  if(ctrl && e.key.toLowerCase() === 'v' && clipboard){ e.preventDefault(); pasteEls(); return; }
+  if(ctrl && e.key.toLowerCase() === 'd'){ e.preventDefault(); dupSel(); return; }
+  if(ctrl && e.key.toLowerCase() === 'a'){ e.preventDefault(); sel = els().map(x => x.id); refreshSelUI(); return; }
+
+  if(e.key === 'Delete' || e.key === 'Backspace'){ if(sel.length){ e.preventDefault(); delSel(); } return; }
+  if(e.key === 'Escape'){ sel = []; refreshSelUI(); return; }
+
+  const step = e.shiftKey ? 10 : 1;
+  const map = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]};
+  if(map[e.key] && sel.length){
+    e.preventDefault();
+    const [dx, dy] = map[e.key];
+    const mmStep = 0.25 * step;
+    for(const i of sel){
+      const el = els().find(x => x.id === i);
+      if(!el || el.locked) continue;
+      el.x = round(clamp(el.x + dx*mmStep/S.card.w*100, -20, 118), 3);
+      el.y = round(clamp(el.y + dy*mmStep/S.card.h*100, -20, 118), 3);
+    }
+    drawStage(); renderCoordMap(); readCoord();
+    clearTimeout(window._nudgeT); window._nudgeT = setTimeout(snapshot, 500);
+  }
+});
+
+function pasteEls(){
+  const news = clipboard.map(c => {
+    const n = JSON.parse(JSON.stringify(c));
+    n.id = uid(); n.x = clamp(n.x + 3, 0, 95); n.y = clamp(n.y + 3, 0, 95);
+    if(n.group) n.group = n.group + '_c';
+    return n;
+  });
+  els().push(...news);
+  sel = news.map(n => n.id);
+  snapshot(); refreshAll(); toast(news.length + ' element pasted');
+}
+function dupSel(){
+  if(!sel.length) return;
+  clipboard = sel.map(i => JSON.parse(JSON.stringify(els().find(x => x.id === i))));
+  pasteEls();
+}
+function delSel(){
+  const list = els();
+  const grpIds = new Set();
+  for(const i of sel){ const e = list.find(x => x.id === i); if(e && e.group) grpIds.add(e.group); }
+  S.sides[S.side].els = list.filter(e => !sel.includes(e.id));
+  sel = [];
+  snapshot(); refreshAll();
+}
+function groupSel(){
+  if(sel.length < 2) return toast('Do ya zyada element select karo', 'err');
+  const g = 'g' + (UID++);
+  for(const i of sel){ const e = els().find(x => x.id === i); if(e) e.group = g; }
+  snapshot(); refreshAll(); toast('Grouped');
+}
+function ungroupSel(){
+  for(const i of sel){ const e = els().find(x => x.id === i); if(e) e.group = null; }
+  snapshot(); refreshAll(); toast('Ungrouped');
+}
+function alignSel(mode){
+  if(!sel.length) return toast('Pehle element select karo', 'err');
+  const list = sel.map(i => els().find(x => x.id === i)).filter(Boolean);
+  if(list.length === 1){
+    const e = list[0];
+    if(mode === 'l') e.x = 0;
+    if(mode === 'r') e.x = 100 - e.w;
+    if(mode === 'cx') e.x = (100 - e.w)/2;
+    if(mode === 't') e.y = 0;
+    if(mode === 'b') e.y = 100 - e.h;
+    if(mode === 'cy') e.y = (100 - e.h)/2;
+  } else {
+    const L = Math.min(...list.map(e => e.x)), R = Math.max(...list.map(e => e.x + e.w));
+    const T = Math.min(...list.map(e => e.y)), B = Math.max(...list.map(e => e.y + e.h));
+    for(const e of list){
+      if(mode === 'l') e.x = L;
+      if(mode === 'r') e.x = R - e.w;
+      if(mode === 'cx') e.x = (L + R)/2 - e.w/2;
+      if(mode === 't') e.y = T;
+      if(mode === 'b') e.y = B - e.h;
+      if(mode === 'cy') e.y = (T + B)/2 - e.h/2;
+    }
+  }
+  for(const e of list){ e.x = round(e.x,3); e.y = round(e.y,3); }
+  snapshot(); refreshAll();
+}
+
+/* ---------------- ZOOM ---------------- */
+function zoomBy(d){ S.zoom = clamp(S.zoom + d, 0.3, 4); drawStage(); }
+function fitZoom(){
+  const wrap = $('stageWrap');
+  const availW = wrap.clientWidth - 60, availH = 520;
+  S.zoom = clamp(Math.min(availW / (S.card.w*4), availH / (S.card.h*4)), 0.3, 4);
+  drawStage();
+}
+</script>
+<script>
+/* ---------------- PROPERTIES PANEL ---------------- */
+const SWATCHES = ['#16222F','#2B3A4A','#5C6B7A','#FFFFFF','#E8912B','#0E7C6B','#C23B2E','#2563A8','#7A3FA8','#1F8A3B'];
+function swatches(prop){
+  return `<div class="swatch-row">${SWATCHES.map(c =>
+    `<button class="sw" style="background:${c}" onclick="setProp('${prop}','${c}')"></button>`).join('')}</div>`;
+}
+function fldColor(label, prop, val){
+  return `<div class="fld"><label class="lb">${label}</label>
+    <input class="in" type="color" value="${val || '#000000'}" oninput="setProp('${prop}',this.value)">
+    ${swatches(prop)}</div>`;
+}
+function fldNum(label, prop, val, step, min, max){
+  return `<div class="fld"><label class="lb">${label}</label>
+    <input class="in" type="number" value="${val}" step="${step||1}" ${min!=null?'min='+min:''} ${max!=null?'max='+max:''}
+      oninput="setProp('${prop}',parseFloat(this.value)||0)"></div>`;
+}
+function fldSel(label, prop, val, opts){
+  return `<div class="fld"><label class="lb">${label}</label>
+    <select class="in" onchange="setProp('${prop}',this.value)">${opts.map(o => {
+      const [v, t] = Array.isArray(o) ? o : [o, o];
+      return `<option value="${esc(v)}" ${String(val) === String(v) ? 'selected' : ''}>${esc(t)}</option>`;
+    }).join('')}</select></div>`;
+}
+function fldText(label, prop, val, ph){
+  return `<div class="fld"><label class="lb">${label}</label>
+    <input class="in" value="${esc(val||'')}" placeholder="${esc(ph||'')}" oninput="setProp('${prop}',this.value)"></div>`;
+}
+function fldChk(label, prop, val){
+  return `<label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer;margin:4px 0">
+    <input type="checkbox" ${val ? 'checked' : ''} onchange="setProp('${prop}',this.checked)"> ${label}</label>`;
+}
+
+function setProp(prop, val){
+  const list = sel.map(i => els().find(x => x.id === i)).filter(Boolean);
+  for(const e of list){
+    e[prop] = val;
+    if(prop === 'field' || prop === 'label' || prop === 'src') renameEl(e);
+  }
+  drawStage(); renderLayers(); renderCoordMap();
+  clearTimeout(window._propT); window._propT = setTimeout(() => { snapshot(); buildSchoolForm(); buildManualForm(); buildPhotoKeys(); }, 400);
+}
+function renameEl(e){
+  if(e.kind === 'text') e.name = (e.src === 'static' ? 'Text · Fixed' : (e.src === 'student' ? 'Student · ' : 'School · ') + e.field);
+  else if(e.kind === 'pair') e.name = 'Pair · ' + (e.label || e.field);
+  else if(e.kind === 'image') e.name = (e.src === 'student' ? 'Photo · ' : 'Logo · ') + e.field;
+}
+
+function renderProps(){
+  const box = $('propPanel');
+  const list = sel.map(i => els().find(x => x.id === i)).filter(Boolean);
+  $('propKind').textContent = list.length > 1 ? list.length + ' selected' : (list[0] ? list[0].kind : '');
+  if(!list.length){
+    box.innerHTML = `<div class="empty" style="padding:30px 10px"><div class="big">⌖</div>
+      <div class="hint">Canvas pe kisi element ko select karo</div></div>`;
+    return;
+  }
+  const e = list[0];
+  let h = '';
+
+  h += `<div class="grp">Position &amp; size (%)</div>
+    <div class="grid2">
+      ${fldNum('X', 'x', round(e.x,2), 0.1)}
+      ${fldNum('Y', 'y', round(e.y,2), 0.1)}
+      ${fldNum('Width', 'w', round(e.w,2), 0.1)}
+      ${fldNum('Height', 'h', round(e.h,2), 0.1)}
+    </div>
+    <div class="grid2">
+      ${fldNum('Rotation °', 'rot', e.rot || 0, 1)}
+      ${fldNum('Opacity', 'opacity', e.opacity == null ? 1 : e.opacity, 0.05, 0, 1)}
+    </div>
+    ${fldText('Layer name', 'name', e.name)}`;
+
+  if(e.kind === 'text' || e.kind === 'pair'){
+    h += `<div class="grp">Content</div>`;
+    h += fldSel('Source', 'src', e.src, [['student','Student field'],['school','School field'],['static','Fixed text']]);
+    if(e.src === 'static') h += `<div class="fld"><label class="lb">Text</label>
+      <textarea class="in" rows="2" oninput="setProp('text',this.value)">${esc(e.text||'')}</textarea></div>`;
+    else h += fldText('Field name', 'field', e.field, 'e.g. Name');
+    if(e.kind === 'pair'){
+      h += fldText('Label', 'label', e.label);
+      h += fldText('Separator', 'sepText', e.sepText == null ? ': ' : e.sepText);
+    }
+    h += `<div class="grid2">${fldText('Prefix', 'prefix', e.prefix)}${fldText('Suffix', 'suffix', e.suffix)}</div>`;
+
+    h += `<div class="grp">Type</div>`;
+    h += fldSel('Font', 'font', e.font, FONTS);
+    h += `<div class="grid2">
+      ${fldNum('Size (mm)', 'size', e.size, 0.1, 0.5)}
+      ${fldSel('Weight', 'weight', e.weight, [[300,'Light'],[400,'Regular'],[500,'Medium'],[600,'Semibold'],[700,'Bold'],[800,'Extra bold'],[900,'Black']])}
+    </div>`;
+    h += fldColor('Colour', 'color', e.color);
+    h += `<div class="grid2">
+      ${fldSel('Align', 'align', e.align, [['left','Left'],['center','Center'],['right','Right']])}
+      ${fldSel('Vertical', 'valign', e.valign, [['top','Top'],['middle','Middle'],['bottom','Bottom']])}
+    </div>`;
+    h += `<div class="grid2">
+      ${fldNum('Letter space (mm)', 'ls', e.ls || 0, 0.05)}
+      ${fldNum('Line height', 'lh', e.lh || 1.2, 0.05, 0.6)}
+    </div>`;
+    h += `<div class="grid2">
+      ${fldSel('Caps', 'caps', e.caps, [['none','Normal'],['upper','UPPERCASE'],['lower','lowercase'],['title','Title Case']])}
+      ${fldSel('Overflow', 'fit', e.fit, [['shrink','Shrink to fit'],['clip','Clip'],['none','Let it spill']])}
+    </div>`;
+    h += `<div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${fldChk('Wrap lines', 'wrap', e.wrap !== false)}
+      ${fldChk('Italic', 'italic', e.italic)}
+      ${fldChk('Underline', 'underline', e.underline)}
+      ${fldChk('Shadow', 'shadow', e.shadow)}
+    </div>`;
+
+    h += `<div class="grp">Box</div>`;
+    h += `<div class="fld"><label class="lb">Fill (blank = transparent)</label>
+      <div class="row"><input class="in" type="color" value="${e.boxFill || '#ffffff'}" oninput="setProp('boxFill',this.value)">
+      <button class="btn sm" onclick="setProp('boxFill','')">Clear</button></div></div>`;
+    h += `<div class="grid2">
+      ${fldNum('Padding X (mm)', 'padX', e.padX || 0, 0.1, 0)}
+      ${fldNum('Padding Y (mm)', 'padY', e.padY || 0, 0.1, 0)}
+    </div>`;
+    h += `<div class="grid2">
+      ${fldNum('Corner (mm)', 'radius', e.radius || 0, 0.2, 0)}
+      ${fldNum('Border (mm)', 'borderW', e.borderW || 0, 0.1, 0)}
+    </div>`;
+    if(e.borderW > 0) h += fldColor('Border colour', 'borderC', e.borderC);
+    h += `<div class="grid2">
+      ${fldNum('Outline (mm)', 'strokeW', e.strokeW || 0, 0.05, 0)}
+      ${e.strokeW > 0 ? fldColor('Outline colour', 'strokeC', e.strokeC) : ''}
+    </div>`;
+  }
+
+  if(e.kind === 'image'){
+    h += `<div class="grp">Image</div>`;
+    h += fldSel('Source', 'src', e.src, [['student','Student photo'],['school','School logo / sign']]);
+    h += fldText('Field name', 'field', e.field);
+    h += `<div class="grid2">
+      ${fldSel('Fit', 'fit', e.fit, [['cover','Cover (crop)'],['contain','Contain (full)'],['fill','Stretch']])}
+      ${fldSel('Shape', 'shape', e.shape, [['rect','Rectangle'],['rounded','Rounded'],['circle','Circle']])}
+    </div>`;
+    if(e.shape === 'rounded') h += fldNum('Corner (mm)', 'radius', e.radius || 0, 0.2, 0);
+    h += `<div class="grid2">
+      ${fldNum('Border (mm)', 'borderW', e.borderW || 0, 0.1, 0)}
+      ${e.borderW > 0 ? fldColor('Border colour', 'borderC', e.borderC) : ''}
+    </div>`;
+    h += `<div class="fld"><label class="lb">Backing fill</label>
+      <div class="row"><input class="in" type="color" value="${e.boxFill || '#ffffff'}" oninput="setProp('boxFill',this.value)">
+      <button class="btn sm" onclick="setProp('boxFill','')">Clear</button></div></div>`;
+    if(e.src === 'student')
+      h += `<div class="hint">Photo tab 3 me upload hongi. Aspect ratio 3:4 (passport) best rehta hai.</div>`;
+  }
+
+  if(e.kind === 'shape'){
+    h += `<div class="grp">Shape</div>`;
+    h += fldSel('Type', 'shape', e.shape, [['rect','Rectangle'],['circle','Circle'],['line','Line']]);
+    h += fldColor(e.shape === 'line' ? 'Line colour' : 'Fill', 'fill', e.fill);
+    if(e.shape !== 'line'){
+      h += fldNum('Corner (mm)', 'radius', e.radius || 0, 0.2, 0);
+      h += fldNum('Stroke (mm)', 'strokeW', e.strokeW || 0, 0.1, 0);
+      if(e.strokeW > 0) h += fldColor('Stroke colour', 'stroke', e.stroke);
+    } else {
+      h += fldSel('End cap', 'cap', e.cap, [['butt','Flat'],['round','Round']]);
+    }
+  }
+
+  if(e.kind === 'qr' || e.kind === 'barcode'){
+    h += `<div class="grp">${e.kind === 'qr' ? 'QR code' : 'Barcode'}</div>`;
+    h += fldSel('Source', 'src', e.src, [['student','Student field'],['school','School field'],['static','Fixed text']]);
+    if(e.src === 'static') h += fldText('Text', 'text', e.text);
+    else h += fldText('Field name', 'field', e.field);
+    h += fldText('Or pattern', 'pattern', e.pattern, '{name} · {roll} · {class}');
+    h += `<div class="hint" style="margin:-6px 0 10px">Pattern diya to wahi use hoga. <code>{field}</code> likho.</div>`;
+    h += fldColor('Colour', 'color', e.color);
+    h += `<div class="fld"><label class="lb">Background</label>
+      <div class="row"><input class="in" type="color" value="${e.boxFill || '#ffffff'}" oninput="setProp('boxFill',this.value)">
+      <button class="btn sm" onclick="setProp('boxFill','')">Clear</button></div></div>`;
+    if(e.kind === 'barcode'){
+      h += fldSel('Format', 'bcFormat', e.bcFormat, ['CODE128','CODE39','EAN13','ITF14','MSI','pharmacode']);
+      h += fldChk('Show number below', 'showText', e.showText !== false);
+    }
+  }
+
+  if(e.kind === 'icon'){
+    h += `<div class="grp">Icon</div>`;
+    h += fldSel('Glyph', 'icon', e.icon, Object.keys(ICONS));
+    h += fldColor('Colour', 'color', e.color);
+  }
+
+  h += `<div class="sep"></div>
+    <div class="grid2" style="gap:7px">
+      <button class="btn sm" onclick="moveLayer(1)">Bring forward</button>
+      <button class="btn sm" onclick="moveLayer(-1)">Send back</button>
+      <button class="btn sm" onclick="moveLayer(99)">To front</button>
+      <button class="btn sm" onclick="moveLayer(-99)">To back</button>
+    </div>
+    <div class="row" style="margin-top:7px">
+      <button class="btn sm" onclick="dupSel()">Duplicate</button>
+      <button class="btn sm dn" onclick="delSel()">Delete</button>
+    </div>`;
+  box.innerHTML = h;
+}
+
+function moveLayer(dir){
+  const list = els();
+  const i = list.findIndex(x => x.id === sel[0]);
+  if(i < 0) return;
+  const [e] = list.splice(i, 1);
+  let j;
+  if(dir === 99) j = list.length;
+  else if(dir === -99) j = 0;
+  else j = clamp(i + dir, 0, list.length);
+  list.splice(j, 0, e);
+  snapshot(); refreshAll();
+}
+
+/* ---------------- LAYERS ---------------- */
+const KIND_ICON = {text:'T', pair:'⧉', image:'▣', shape:'◆', qr:'▩', barcode:'|||', icon:'★'};
+function renderLayers(){
+  const box = $('layerList');
+  const list = els();
+  $('layerCount').textContent = list.length;
+  if(!list.length){
+    box.innerHTML = `<div class="empty" style="padding:22px"><div class="hint">Abhi koi element nahi. Left panel se add karo.</div></div>`;
+    return;
+  }
+  box.innerHTML = list.slice().reverse().map((e, ri) => {
+    const i = list.length - 1 - ri;
+    const cls = sel[0] === e.id && sel.length === 1 ? 'on' : (sel.includes(e.id) ? 'msel' : '');
+    return `<div class="lyr ${cls}" draggable="true" data-i="${i}" data-id="${e.id}" onclick="pickLayer(event,'${e.id}')">
+      <span class="ic">${KIND_ICON[e.kind] || '•'}</span>
+      <span class="nm">${esc(e.name || e.kind)}${e.group ? ' <span class="chip b" style="padding:0 5px">grp</span>' : ''}</span>
+      <button class="tg" title="Show/hide" onclick="event.stopPropagation();tglLayer('${e.id}','hidden')">${e.hidden ? '🚫' : '👁'}</button>
+      <button class="tg" title="Lock" onclick="event.stopPropagation();tglLayer('${e.id}','locked')">${e.locked ? '🔒' : '🔓'}</button>
+      <button class="x" onclick="event.stopPropagation();delOne('${e.id}')">×</button>
+    </div>`;
+  }).join('');
+  bindLayerDrag();
+}
+function pickLayer(ev, id){
+  if(ev.shiftKey){ if(sel.includes(id)) sel = sel.filter(x => x !== id); else sel.push(id); }
+  else sel = [id];
+  refreshSelUI();
+}
+function tglLayer(id, prop){
+  const e = els().find(x => x.id === id);
+  if(e){ e[prop] = !e[prop]; snapshot(); refreshAll(); }
+}
+function delOne(id){
+  S.sides[S.side].els = els().filter(e => e.id !== id);
+  sel = sel.filter(x => x !== id);
+  snapshot(); refreshAll();
+}
+function bindLayerDrag(){
+  const box = $('layerList');
+  let src = null;
+  box.querySelectorAll('.lyr').forEach(n => {
+    n.ondragstart = e => { src = n; n.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; };
+    n.ondragend = () => { n.classList.remove('drag'); box.querySelectorAll('.lyr').forEach(x => x.classList.remove('over')); };
+    n.ondragover = e => { e.preventDefault(); n.classList.add('over'); };
+    n.ondragleave = () => n.classList.remove('over');
+    n.ondrop = e => {
+      e.preventDefault(); n.classList.remove('over');
+      if(!src || src === n) return;
+      const from = +src.dataset.i, to = +n.dataset.i;
+      const list = els();
+      const [m] = list.splice(from, 1);
+      list.splice(to, 0, m);
+      snapshot(); refreshAll();
+    };
+  });
+}
+
+/* ---------------- COORD MAP ---------------- */
+function renderCoordMap(){
+  const unit = $('coordUnit').value;
+  const list = els();
+  if(!list.length){ $('coordMap').innerHTML = `<div class="hint" style="padding:12px">Koi element nahi.</div>`; return; }
+  const conv = (v, axis) => {
+    if(unit === 'pct') return round(v, 2);
+    const mm = v/100 * (axis === 'x' ? S.card.w : S.card.h);
+    if(unit === 'mm') return round(mm, 2);
+    return Math.round(mm/25.4*300);
+  };
+  const back = (v, axis) => {
+    if(unit === 'pct') return v;
+    const mm = unit === 'mm' ? v : v/300*25.4;
+    return mm / (axis === 'x' ? S.card.w : S.card.h) * 100;
+  };
+  window._coordBack = back;
+  $('coordMap').innerHTML = `<table class="coord"><thead><tr>
+      <th>Element</th><th style="text-align:right">X</th><th style="text-align:right">Y</th>
+      <th style="text-align:right">W</th><th style="text-align:right">H</th></tr></thead><tbody>` +
+    list.map(e => {
+      const cls = sel[0] === e.id && sel.length === 1 ? 'on' : (sel.includes(e.id) ? 'msel' : '');
+      return `<tr class="${cls}" onclick="sel=['${e.id}'];refreshSelUI()">
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${esc(e.name || e.kind)}</td>
+        <td><input value="${conv(e.x,'x')}" onchange="setCoord('${e.id}','x',this.value)"></td>
+        <td><input value="${conv(e.y,'y')}" onchange="setCoord('${e.id}','y',this.value)"></td>
+        <td><input value="${conv(e.w,'x')}" onchange="setCoord('${e.id}','w',this.value)"></td>
+        <td><input value="${conv(e.h,'y')}" onchange="setCoord('${e.id}','h',this.value)"></td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+function setCoord(id, prop, val){
+  const e = els().find(x => x.id === id);
+  if(!e) return;
+  const axis = (prop === 'x' || prop === 'w') ? 'x' : 'y';
+  e[prop] = round(window._coordBack(parseFloat(val) || 0, axis), 3);
+  snapshot(); drawStage(); readCoord();
+}
+function copyCoords(){
+  const data = JSON.stringify({card:S.card, side:S.side, els:els()}, null, 2);
+  navigator.clipboard.writeText(data).then(() => toast('JSON copied', 'ok'), () => toast('Copy fail', 'err'));
+}
+
+/* ---------------- CARD SIZE ---------------- */
+function applyPreset(){
+  const v = $('sizePreset').value;
+  if(v === 'custom') return;
+  const [w, h] = v.split(',').map(Number);
+  S.card.w = w; S.card.h = h;
+  syncSizeInputs(); snapshot(); refreshAll(); fitZoom();
+}
+function onSizeChange(){
+  S.card.w = clamp(parseFloat($('cardW').value) || 54, 10, 500);
+  S.card.h = clamp(parseFloat($('cardH').value) || 85.6, 10, 500);
+  S.card.r = Math.max(0, parseFloat($('cardR').value) || 0);
+  const m = `${S.card.w},${S.card.h}`;
+  const opt = [...$('sizePreset').options].find(o => o.value === m);
+  $('sizePreset').value = opt ? m : 'custom';
+  snapshot(); refreshAll(); fitZoom();
+}
+function syncSizeInputs(){
+  $('cardW').value = S.card.w; $('cardH').value = S.card.h; $('cardR').value = S.card.r;
+  const m = `${S.card.w},${S.card.h}`;
+  const opt = [...$('sizePreset').options].find(o => o.value === m);
+  $('sizePreset').value = opt ? m : 'custom';
+}
+
+/* ---------------- SIDES ---------------- */
+function toggleTwoSided(){
+  S.twoSided = $('twoSided').checked;
+  if(!S.twoSided){ S.side = 'front'; }
+  syncSideUI(); snapshot(); refreshAll();
+}
+function setSide(k){
+  S.side = k; sel = [];
+  syncSideUI(); refreshAll(); fitZoom();
+}
+function syncSideUI(){
+  $('twoSided').checked = S.twoSided;
+  $('sideSeg').style.display = S.twoSided ? 'flex' : 'none';
+  $('schSideSeg').style.display = S.twoSided ? 'flex' : 'none';
+  $('pvSideWrap').style.display = S.twoSided ? '' : 'none';
+  $('backModeWrap').style.display = S.twoSided ? '' : 'none';
+  $('sideHint').style.display = S.twoSided ? 'none' : '';
+  $('sgFront').classList.toggle('on', S.side === 'front');
+  $('sgBack').classList.toggle('on', S.side === 'back');
+  const sd = side();
+  $('bgInfo').style.display = sd.bg ? 'block' : 'none';
+  $('bgFit').value = sd.bgFit || 'fill';
+  $('cardBase').value = sd.base || '#ffffff';
+  if(sd.bg) $('bgMeta').innerHTML = `Image: <b>${sd.bgW} × ${sd.bgH}px</b>`;
+  updIdealPx();
+}
+
+/* ---------------- BACKGROUND ---------------- */
+async function loadBg(file){
+  if(!file) return;
+  const url = await readFileAsURL(file);
+  const im = await loadImage(url);
+  if(!im) return toast('Image load nahi hui', 'err');
+  const sd = side();
+  sd.bg = url; sd.bgW = im.naturalWidth; sd.bgH = im.naturalHeight;
+  $('bgInfo').style.display = 'block';
+  $('bgMeta').innerHTML = `Image: <b>${sd.bgW} × ${sd.bgH}px</b>`;
+  updIdealPx();
+  snapshot(); refreshAll();
+  toast('Background lag gaya', 'ok');
+}
+function removeBg(){
+  const sd = side();
+  sd.bg = null; sd.bgW = 0; sd.bgH = 0;
+  $('bgInfo').style.display = 'none';
+  snapshot(); refreshAll();
+}
+function matchAspect(){
+  const sd = side();
+  if(!sd.bgW) return;
+  const ar = sd.bgW / sd.bgH;
+  S.card.h = round(S.card.w / ar, 1);
+  syncSizeInputs(); snapshot(); refreshAll(); fitZoom();
+  toast('Card ratio image se match ho gaya', 'ok');
+}
+function updIdealPx(){
+  const px = Math.round(S.card.w/25.4*300) + ' × ' + Math.round(S.card.h/25.4*300) + ' px';
+  const n = $('idealPx'); if(n) n.textContent = px;
+}
+
+function readFileAsURL(file){
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => res(null);
+    r.readAsDataURL(file);
+  });
+}
+
+/* resize an image file to a max dimension, return dataURL */
+async function shrinkImage(file, maxDim, quality){
+  const url = await readFileAsURL(file);
+  if(!maxDim) return url;
+  const im = await loadImage(url);
+  if(!im || !im.naturalWidth) return url;
+  const m = Math.max(im.naturalWidth, im.naturalHeight);
+  if(m <= maxDim) return url;
+  const sc = maxDim / m;
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(im.naturalWidth * sc);
+  cv.height = Math.round(im.naturalHeight * sc);
+  const cx = cv.getContext('2d');
+  cx.imageSmoothingQuality = 'high';
+  cx.drawImage(im, 0, 0, cv.width, cv.height);
+  imgCache.delete(url);
+  return cv.toDataURL('image/jpeg', quality || 0.9);
+}
+
+/* ---------------- TEMPLATES ---------------- */
+function blankTemplate(){
+  if(!confirm('Poora design hat jayega. Sure?')) return;
+  S.sides[S.side] = BLANK_SIDE();
+  sel = [];
+  syncSideUI(); snapshot(); refreshAll();
+}
+
+function starterTemplate(){
+  S.card = {w:54, h:85.6, r:3};
+  S.sides.front = BLANK_SIDE();
+  S.side = 'front';
+  syncSizeInputs();
+  const L = S.sides.front.els;
+  const mk = (o) => { const e = baseEl(o.kind, o); L.push(e); return e; };
+
+  mk({kind:'shape', shape:'rect', x:0, y:0, w:100, h:22, fill:'#16222F', radius:0, strokeW:0, name:'Header band'});
+  mk({kind:'shape', shape:'rect', x:0, y:20.5, w:100, h:1.2, fill:'#E8912B', radius:0, strokeW:0, name:'Accent line'});
+  mk({kind:'image', src:'school', field:'Logo', x:6, y:3, w:14, h:9.2, fit:'contain', shape:'rect', radius:0, borderW:0, borderC:'#fff', boxFill:'', name:'Logo · Logo'});
+  mk({kind:'text', src:'school', field:'School Name', x:22, y:3.2, w:72, h:7.5, font:'Poppins', size:3.5, weight:700,
+      color:'#FFFFFF', align:'left', valign:'middle', ls:0, lh:1.1, caps:'upper', wrap:true, fit:'shrink', maxLines:2,
+      padX:0.2, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', name:'School · School Name'});
+  mk({kind:'text', src:'school', field:'Address', x:22, y:10.6, w:72, h:4.4, font:'Inter', size:2, weight:400,
+      color:'#D8E0E8', align:'left', valign:'middle', ls:0, lh:1.15, caps:'none', wrap:true, fit:'shrink', maxLines:2,
+      padX:0.2, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', name:'School · Address'});
+  mk({kind:'text', src:'school', field:'Session', x:22, y:15.2, w:72, h:4, font:'Inter', size:2, weight:600,
+      color:'#E8912B', align:'left', valign:'middle', ls:0.05, lh:1.15, caps:'upper', wrap:false, fit:'shrink',
+      padX:0.2, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'Session ', suffix:'', name:'School · Session'});
+
+  mk({kind:'image', src:'student', field:'Photo', x:31, y:25, w:38, h:29, fit:'cover', shape:'rounded', radius:2,
+      borderW:0.6, borderC:'#E8912B', boxFill:'#EEF1F5', name:'Photo · Photo'});
+
+  mk({kind:'text', src:'student', field:'Name', x:5, y:56, w:90, h:6.4, font:'Poppins', size:3.6, weight:700,
+      color:'#16222F', align:'center', valign:'middle', ls:0, lh:1.1, caps:'title', wrap:false, fit:'shrink',
+      padX:0.5, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', name:'Student · Name'});
+
+  const g = 'g' + (UID++);
+  mk({kind:'shape', shape:'rect', x:30, y:62.6, w:40, h:5.4, fill:'#0E7C6B', radius:2.4, strokeW:0, stroke:'#000', group:g, name:'Badge bg'});
+  mk({kind:'text', src:'student', field:'Class', x:30, y:62.6, w:40, h:5.4, font:'Poppins', size:2.7, weight:700,
+      color:'#FFFFFF', align:'center', valign:'middle', ls:0.05, lh:1.1, caps:'upper', wrap:false, fit:'shrink',
+      padX:1, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'Class ', suffix:'', group:g, name:'Badge text'});
+
+  mk({kind:'pair', src:'student', field:'Roll No', label:'Roll No', sepText:': ', x:6, y:69.4, w:88, h:4.6,
+      font:'Inter', size:2.5, weight:500, color:'#2B3A4A', align:'left', valign:'middle', ls:0, lh:1.15,
+      caps:'none', wrap:false, fit:'shrink', padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000',
+      prefix:'', suffix:'', name:'Pair · Roll No'});
+  mk({kind:'pair', src:'student', field:'Father Name', label:'Father', sepText:': ', x:6, y:73.6, w:88, h:4.6,
+      font:'Inter', size:2.5, weight:500, color:'#2B3A4A', align:'left', valign:'middle', ls:0, lh:1.15,
+      caps:'none', wrap:false, fit:'shrink', padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000',
+      prefix:'', suffix:'', name:'Pair · Father Name'});
+  mk({kind:'pair', src:'student', field:'DOB', label:'D.O.B', sepText:': ', x:6, y:77.8, w:52, h:4.6,
+      font:'Inter', size:2.5, weight:500, color:'#2B3A4A', align:'left', valign:'middle', ls:0, lh:1.15,
+      caps:'none', wrap:false, fit:'shrink', padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000',
+      prefix:'', suffix:'', name:'Pair · DOB'});
+  mk({kind:'pair', src:'student', field:'Blood Group', label:'Blood', sepText:': ', x:58, y:77.8, w:36, h:4.6,
+      font:'Inter', size:2.5, weight:600, color:'#C23B2E', align:'left', valign:'middle', ls:0, lh:1.15,
+      caps:'none', wrap:false, fit:'shrink', padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000',
+      prefix:'', suffix:'', name:'Pair · Blood Group'});
+
+  mk({kind:'shape', shape:'rect', x:0, y:93.2, w:100, h:6.8, fill:'#EEF1F5', radius:0, strokeW:0, name:'Footer band'});
+  mk({kind:'text', src:'school', field:'Phone', x:4, y:93.6, w:52, h:6, font:'Inter', size:2.1, weight:500,
+      color:'#5C6B7A', align:'left', valign:'middle', ls:0, lh:1.1, caps:'none', wrap:false, fit:'shrink',
+      padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'☎ ', suffix:'', name:'School · Phone'});
+  mk({kind:'text', src:'static', text:'Principal', x:58, y:93.6, w:38, h:6, font:'Inter', size:2.1, weight:600,
+      color:'#5C6B7A', align:'right', valign:'middle', ls:0, lh:1.1, caps:'none', wrap:false, fit:'shrink',
+      padX:0.5, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', name:'Text · Fixed'});
+
+  sel = [];
+  snapshot(); refreshAll(); fitZoom();
+  toast('Starter template load ho gaya', 'ok');
+}
+
+function exportTemplate(){
+  const data = {
+    _app:'ID Card Studio', _v:2, card:S.card, twoSided:S.twoSided,
+    sides:{front:S.sides.front, back:S.sides.back}
+  };
+  dl(new Blob([JSON.stringify(data, null, 2)], {type:'application/json'}), 'id-template.json');
+  toast('Template save ho gaya', 'ok');
+}
+async function importTemplate(file){
+  if(!file) return;
+  try{
+    const o = JSON.parse(await file.text());
+    if(o.card) S.card = o.card;
+    if(o.sides){ S.sides = {front: o.sides.front || BLANK_SIDE(), back: o.sides.back || BLANK_SIDE()}; }
+    else if(o.els){ S.sides.front = Object.assign(BLANK_SIDE(), {els:o.els}); }
+    S.twoSided = !!o.twoSided;
+    S.side = 'front'; sel = [];
+    for(const k of ['front','back']) for(const e of S.sides[k].els) if(!e.id) e.id = uid();
+    syncSizeInputs(); syncSideUI(); snapshot(); refreshAll(); fitZoom();
+    toast('Template load ho gaya', 'ok');
+  }catch(err){ toast('File padhi nahi gayi', 'err'); }
+}
+function dl(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+</script>
+<script>
+/* ---------------- SCHOOL DETAILS ---------------- */
+function buildSchoolForm(){
+  const tf = schoolTextFields(), imf = schoolImageFields();
+  const box = $('schoolForm');
+  $('schCount').textContent = (tf.length + imf.length) + ' fields';
+  if(!tf.length && !imf.length){
+    box.innerHTML = `<div class="empty"><div class="big">◫</div>
+      <div class="hint">Pehle template me <b>School field</b> ya <b>Logo</b> add karo.<br>Wahi fields yahan automatically aa jayenge.</div></div>`;
+    return;
+  }
+  let h = '';
+  if(tf.length){
+    h += `<div class="grp">Text</div><div class="grid2">`;
+    for(const f of tf){
+      const long = /address|name/i.test(f);
+      h += `<div class="fld" ${long ? 'style="grid-column:1/-1"' : ''}>
+        <label class="lb">${esc(f)}</label>
+        <input class="in" data-f="${esc(f)}" value="${esc(S.school[f] || '')}" oninput="setSchool(this.dataset.f,this.value)" placeholder="${esc(sampleFor(f))}">
+      </div>`;
+    }
+    h += `</div>`;
+  }
+  if(imf.length){
+    h += `<div class="grp">Images</div><div class="grid3">`;
+    for(const f of imf){
+      const v = S.school[f];
+      h += `<div class="fld">
+        <label class="lb">${esc(f)}</label>
+        <div class="drop" style="padding:10px" data-f="${esc(f)}" onclick="pickSchoolImg(this.dataset.f)">
+          ${v ? `<img src="${v}" style="max-width:100%;max-height:70px;object-fit:contain">` : `<b>Upload</b><span class="hint">PNG best</span>`}
+        </div>
+        ${v ? `<button class="btn sm dn full" style="margin-top:5px" data-f="${esc(f)}" onclick="setSchool(this.dataset.f,'')">Remove</button>` : ''}
+      </div>`;
+    }
+    h += `</div>`;
+  }
+  h += `<div class="sep"></div><div class="hint">Ye values sab cards par same aayengi. Jo field yahan khaali chhodoge wo card par bhi khaali rahega.</div>`;
+  box.innerHTML = h;
+}
+function setSchool(f, v){
+  if(v === '') delete S.school[f]; else S.school[f] = v;
+  clearTimeout(window._schT);
+  window._schT = setTimeout(() => { schoolPreview(); markDone(); }, 250);
+}
+function pickSchoolImg(f){
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = async () => {
+    if(!inp.files[0]) return;
+    const url = await shrinkImage(inp.files[0], 900, 0.94);
+    S.school[f] = url;
+    await loadImage(url);
+    buildSchoolForm(); schoolPreview(); markDone();
+    toast(f + ' lag gaya', 'ok');
+  };
+  inp.click();
+}
+function schPvSide(k, btn){
+  schSide = k;
+  [...btn.parentNode.children].forEach(b => b.classList.toggle('on', b === btn));
+  schoolPreview();
+}
+async function schoolPreview(){
+  const k = S.twoSided ? schSide : 'front';
+  const cv = $('schPreview');
+  const s = 3.4;
+  await prepCard(k, null);
+  cv.width = Math.round(S.card.w * s * 2);
+  cv.height = Math.round(S.card.h * s * 2);
+  cv.style.width = Math.round(S.card.w * s) + 'px';
+  cv.style.height = 'auto';
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  paintCard(ctx, k, null, s, {sample:true});
+}
+
+/* ---------------- MANUAL ENTRY ---------------- */
+function switchEntry(m){
+  $('segManual').classList.toggle('on', m === 'manual');
+  $('segBulk').classList.toggle('on', m === 'bulk');
+  $('entryManual').style.display = m === 'manual' ? 'block' : 'none';
+  $('entryBulk').style.display = m === 'bulk' ? 'block' : 'none';
+}
+function buildManualForm(){
+  const f = studentFields();
+  const box = $('manualForm');
+  if(!f.length){
+    box.innerHTML = `<div class="hint">Template me <b>Student field</b> add karo, phir yahan form bann jayega.</div>`;
+    return;
+  }
+  box.innerHTML = f.map(x => `<div class="fld">
+      <label class="lb">${esc(x)}</label>
+      <input class="in mf" data-f="${esc(x)}" placeholder="${esc(sampleFor(x))}">
+    </div>`).join('') +
+    (studentPhotoFields().length ? `<div class="fld">
+      <label class="lb">Photo</label>
+      <input class="in" type="file" accept="image/*" id="mfPhoto">
+    </div>` : '');
+}
+async function addManualStudent(){
+  const inputs = [...document.querySelectorAll('#manualForm .mf')];
+  if(!inputs.length) return toast('Pehle template banao', 'err');
+  const data = {};
+  let any = false;
+  for(const i of inputs){ data[i.dataset.f] = i.value.trim(); if(i.value.trim()) any = true; }
+  if(!any) return toast('Kam se kam ek field bharo', 'err');
+  const stu = {id:'s' + (UID++), data, photo:null, photoSrc:null};
+  const pf = $('mfPhoto');
+  if(pf && pf.files[0]){
+    const maxd = parseInt($('photoQ').value) || 0;
+    stu.photo = await shrinkImage(pf.files[0], maxd, 0.9);
+    stu.photoSrc = 'manual';
+    await loadImage(stu.photo);
+  }
+  S.students.push(stu);
+  for(const i of inputs) i.value = '';
+  if(pf) pf.value = '';
+  linkPhotos();
+  renderStudents(); markDone();
+  toast('Student add ho gaya', 'ok');
+  inputs[0].focus();
+}
+
+/* ---------------- SHEET IMPORT ---------------- */
+async function loadSheet(file){
+  if(!file) return;
+  try{
+    let rows;
+    if(/\.csv$/i.test(file.name)){
+      const txt = await file.text();
+      rows = Papa.parse(txt.trim(), {skipEmptyLines:true}).data;
+    } else {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+    }
+    ingestRows(rows);
+  }catch(e){ toast('File padhi nahi gayi', 'err'); }
+}
+function loadPasted(){
+  const txt = $('pasteArea').value.trim();
+  if(!txt) return toast('Kuch paste to karo', 'err');
+  const rows = Papa.parse(txt, {skipEmptyLines:true, delimiter: txt.includes('\t') ? '\t' : ''}).data;
+  ingestRows(rows);
+}
+function ingestRows(rows){
+  rows = (rows || []).filter(r => r && r.some(c => String(c).trim() !== ''));
+  if(rows.length < 2) return toast('Sheet me data nahi mila', 'err');
+  const cols = rows[0].map(c => String(c).trim());
+  const body = rows.slice(1);
+  S.pendingCols = cols;
+  S.pendingRows = body;
+  const fields = studentFields();
+  if(!fields.length) return toast('Pehle template me student fields banao', 'err');
+  const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const auto = {};
+  let exact = 0;
+  for(const f of fields){
+    const i = cols.findIndex(c => norm(c) === norm(f));
+    if(i >= 0){ auto[f] = i; exact++; }
+    else {
+      const j = cols.findIndex(c => norm(c).includes(norm(f)) || norm(f).includes(norm(c)));
+      auto[f] = j >= 0 ? j : -1;
+    }
+  }
+  if(exact === fields.length){ applyMapping(auto); return; }
+  showMapping(auto);
+}
+function showMapping(auto){
+  const fields = studentFields(), cols = S.pendingCols;
+  $('mapRowCount').textContent = `(${S.pendingRows.length} rows mile)`;
+  $('mapRows').innerHTML = fields.map(f => `<div class="fld" style="margin:0">
+      <label class="lb">${esc(f)}</label>
+      <select class="in" data-f="${esc(f)}">
+        <option value="-1">— skip —</option>
+        ${cols.map((c, i) => `<option value="${i}" ${auto[f] === i ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+      </select>
+    </div>`).join('');
+  $('mapBox').style.display = 'block';
+  $('mapBox').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function applyMapping(auto){
+  const map = {};
+  const fromAuto = auto && typeof auto === 'object' && !(auto instanceof Event) && !auto.target;
+  if(fromAuto){
+    Object.assign(map, auto);
+  } else {
+    for(const s of $('mapRows').querySelectorAll('select')) map[s.dataset.f] = parseInt(s.value);
+  }
+  let added = 0;
+  for(const r of S.pendingRows){
+    const data = {};
+    let any = false;
+    for(const f in map){
+      const i = map[f];
+      const v = i >= 0 ? String(r[i] == null ? '' : r[i]).trim() : '';
+      data[f] = v;
+      if(v) any = true;
+    }
+    if(!any) continue;
+    S.students.push({id:'s' + (UID++), data, photo:null, photoSrc:null});
+    added++;
+  }
+  $('mapBox').style.display = 'none';
+  S.pendingRows = null;
+  linkPhotos();
+  renderStudents(); markDone();
+  toast(added + ' students add ho gaye', 'ok');
+}
+function downloadSample(){
+  const f = studentFields();
+  if(!f.length) return toast('Pehle template banao', 'err');
+  const rows = [f, f.map(x => sampleFor(x)), f.map(x => x === 'Name' ? 'Priya Verma' : x === 'Roll No' ? 'A1025' : sampleFor(x))];
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  dl(new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8'}), 'student-sample.csv');
+}
+function exportCSV(){
+  if(!S.students.length) return toast('Koi student nahi', 'err');
+  const f = studentFields();
+  const rows = [f.concat(['Photo'])].concat(S.students.map(s => f.map(x => s.data[x] || '').concat([s.photo ? 'yes' : 'no'])));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  dl(new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8'}), 'students.csv');
+}
+
+/* ---------------- PHOTOS ---------------- */
+const normKey = s => String(s || '').toLowerCase()
+  .replace(/\.[a-z0-9]+$/i, '')
+  .replace(/[^a-z0-9]/g, '')
+  .replace(/^0+(?=\d)/, '');
+
+/* keep every uploaded file, even when two names normalise the same */
+function uniquePhotoKey(k){
+  if(!k) k = 'img';
+  if(!S.photos[k]) return k;
+  let i = 2;
+  while(S.photos[k + '~' + i]) i++;
+  return k + '~' + i;
+}
+function buildPhotoKeys(){
+  const f = studentFields();
+  const selEl = $('photoKey');
+  const cur = selEl.value;
+  selEl.innerHTML = f.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  if(f.includes(cur)) selEl.value = cur;
+  else {
+    const pref = f.find(x => /roll|adm|id|code/i.test(x)) || f[0];
+    if(pref) selEl.value = pref;
+  }
+}
+
+async function loadPhotos(fileList){
+  const files = [...fileList].filter(f => /\.(jpe?g|png|webp|gif|bmp)$/i.test(f.name));
+  if(!files.length) return toast('Koi image file nahi mili', 'err');
+  files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric:true}));
+  const maxd = parseInt($('photoQ').value) || 0;
+  $('phProg').style.display = 'block';
+  let n = 0;
+  for(const f of files){
+    const url = await shrinkImage(f, maxd, 0.88);
+    const base = f.name.replace(/^.*[\\\/]/, '');
+    const key = uniquePhotoKey(normKey(base));
+    S.photos[key] = {name:base, url};
+    if(!S.photoOrder.includes(key)) S.photoOrder.push(key);
+    n++;
+    if(n % 3 === 0 || n === files.length){
+      $('phBar').style.width = (n/files.length*100) + '%';
+      $('photoStat').textContent = `Loading ${n} / ${files.length}…`;
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  S.photoOrder.sort((a, b) => S.photos[a].name.localeCompare(S.photos[b].name, undefined, {numeric:true}));
+  $('phProg').style.display = 'none';
+  linkPhotos();
+  toast(n + ' photos load ho gayi', 'ok');
+}
+
+async function loadPhotoZip(file){
+  if(!file) return;
+  if(typeof JSZip === 'undefined') return toast('ZIP library load nahi hui', 'err');
+  try{
+    $('phProg').style.display = 'block';
+    $('photoStat').textContent = 'ZIP khol rahe hain…';
+    const zip = await JSZip.loadAsync(file);
+    const entries = Object.values(zip.files).filter(f => !f.dir && /\.(jpe?g|png|webp|gif|bmp)$/i.test(f.name));
+    if(!entries.length){ $('phProg').style.display = 'none'; return toast('ZIP me koi image nahi', 'err'); }
+    entries.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric:true}));
+    const maxd = parseInt($('photoQ').value) || 0;
+    let n = 0;
+    for(const e of entries){
+      const blob = await e.async('blob');
+      const fileObj = new File([blob], e.name.replace(/^.*[\\\/]/, ''), {type:'image/jpeg'});
+      const url = await shrinkImage(fileObj, maxd, 0.88);
+      const base = fileObj.name;
+      const key = uniquePhotoKey(normKey(base));
+      S.photos[key] = {name:base, url};
+      if(!S.photoOrder.includes(key)) S.photoOrder.push(key);
+      n++;
+      $('phBar').style.width = (n/entries.length*100) + '%';
+      $('photoStat').textContent = `Unzipping ${n} / ${entries.length}…`;
+      if(n % 3 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+    S.photoOrder.sort((a, b) => S.photos[a].name.localeCompare(S.photos[b].name, undefined, {numeric:true}));
+    $('phProg').style.display = 'none';
+    linkPhotos();
+    toast(n + ' photos ZIP se aa gayi', 'ok');
+  }catch(e){ $('phProg').style.display = 'none'; toast('ZIP khul nahi payi', 'err'); }
+}
+
+function clearPhotos(){
+  if(!confirm('Sari uploaded photos hat jayengi. Sure?')) return;
+  S.photos = {}; S.photoOrder = [];
+  for(const s of S.students) if(s.photoSrc !== 'manual' && s.photoSrc !== 'row'){ s.photo = null; s.photoSrc = null; }
+  linkPhotos();
+}
+
+function linkPhotos(){
+  if(!$('photoKey').options.length) buildPhotoKeys();
+  const mode = $('photoMode').value;
+  const key = $('photoKey').value;
+  const smart = $('photoSmart') ? $('photoSmart').checked : true;
+  let exact = 0, fuzzy = 0;
+
+  if(mode === 'order'){
+    S.students.forEach((s, i) => {
+      if(s.photoSrc === 'manual' || s.photoSrc === 'row'){ exact++; return; }
+      const k = S.photoOrder[i];
+      if(k){ s.photo = S.photos[k].url; s.photoSrc = 'order'; exact++; }
+      else { s.photo = null; s.photoSrc = null; }
+    });
+  } else {
+    const allKeys = Object.keys(S.photos);
+    const taken = new Set();
+    const pending = [];
+    /* pass 1 — exact normalised match, which is what most schools' files look like */
+    for(const s of S.students){
+      if(s.photoSrc === 'manual' || s.photoSrc === 'row'){ exact++; continue; }
+      s.photo = null; s.photoSrc = null;
+      const k = normKey(s.data[key]);
+      if(k && S.photos[k]){ s.photo = S.photos[k].url; s.photoSrc = 'match'; taken.add(k); exact++; }
+      else if(k) pending.push({s, k});
+    }
+    /* pass 2 — camera and WhatsApp names like IMG_A1024.jpg or A1024_1.jpg.
+       Only accept when exactly one unused file fits, so nobody gets someone
+       else's face by accident. */
+    if(smart){
+      for(const {s, k} of pending){
+        if(k.length < 3) continue;
+        const hits = allKeys.filter(pk => !taken.has(pk) &&
+          (pk.startsWith(k) || pk.endsWith(k) || pk.includes(k)));
+        if(hits.length === 1){
+          s.photo = S.photos[hits[0]].url; s.photoSrc = 'fuzzy';
+          taken.add(hits[0]); fuzzy++;
+        }
+      }
+    }
+  }
+
+  const total = Object.keys(S.photos).length;
+  const matched = exact + fuzzy;
+  $('photoChip').textContent = total;
+  const linked = S.students.filter(s => s.photo).length;
+  const unused = Math.max(0, total - S.students.filter(s => ['match','order','fuzzy'].includes(s.photoSrc)).length);
+  if(!total){
+    $('photoStat').textContent = 'Koi photo upload nahi ki.';
+  } else {
+    const missing = S.students.length - linked;
+    $('photoStat').innerHTML =
+      `<b>${total}</b> photos · <b style="color:${missing ? 'var(--red)' : 'var(--teal)'}">${linked}</b>/${S.students.length} students ko lag gayi` +
+      (fuzzy ? ` · ${fuzzy} smart match` : '') +
+      (unused ? ` · ${unused} photo kisi se match nahi hui` : '') +
+      (missing ? `<br>${missing} student bina photo ke hain — match field badal ke dekho ya "list order" mode use karo.` : '');
+  }
+  renderStudents();
+  markDone();
+}
+
+/* replace one student's photo from the table */
+function rowPhotoPick(id){
+  const inp = $('rowPhoto');
+  inp.onchange = async () => {
+    if(!inp.files[0]) return;
+    const stu = S.students.find(s => s.id === id);
+    const maxd = parseInt($('photoQ').value) || 0;
+    stu.photo = await shrinkImage(inp.files[0], maxd, 0.9);
+    stu.photoSrc = 'row';
+    await loadImage(stu.photo);
+    inp.value = '';
+    renderStudents();
+    toast('Photo replace ho gayi', 'ok');
+  };
+  inp.click();
+}
+
+/* ---------------- STUDENT TABLE ---------------- */
+function isIncomplete(s){
+  const f = studentFields();
+  return f.some(x => !s.data[x] || String(s.data[x]).trim() === '');
+}
+function renderStudents(){
+  const box = $('stuTable');
+  const f = studentFields();
+  const q = ($('stuSearch').value || '').toLowerCase().trim();
+  $('stuCount').textContent = S.students.length;
+  const bad = S.students.filter(isIncomplete).length;
+  $('stuBad').style.display = bad ? '' : 'none';
+  $('stuBad').textContent = bad + ' incomplete';
+
+  if(!S.students.length){
+    box.innerHTML = `<div class="empty"><div class="big">☰</div>
+      <div class="hint">Abhi koi student nahi. Manual add karo ya sheet upload karo.</div></div>`;
+    return;
+  }
+  const rows = S.students.filter(s => !q || f.some(x => String(s.data[x] || '').toLowerCase().includes(q)));
+  const needPhoto = studentPhotoFields().length > 0;
+  box.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th style="width:26px"><input type="checkbox" onchange="checkAll(this.checked)"></th>
+      <th style="width:34px">#</th>
+      ${needPhoto ? '<th style="width:42px">Photo</th>' : ''}
+      ${f.map(x => `<th>${esc(x)}</th>`).join('')}
+      <th style="width:40px"></th>
+    </tr></thead><tbody>
+    ${rows.map(s => {
+      const i = S.students.indexOf(s);
+      return `<tr class="${isIncomplete(s) ? 'bad' : ''}">
+        <td><input type="checkbox" class="rowchk" data-id="${s.id}"></td>
+        <td class="muted">${i+1}</td>
+        ${needPhoto ? `<td>${s.photo
+          ? `<img class="thumb" src="${s.photo}" title="Click to replace" onclick="rowPhotoPick('${s.id}')">`
+          : `<div class="thumb miss" title="Click to add" onclick="rowPhotoPick('${s.id}')">+</div>`}</td>` : ''}
+        ${f.map(x => `<td class="edit" contenteditable data-f="${esc(x)}" data-s="${s.id}" onblur="editCell(this.dataset.s,this.dataset.f,this.textContent)">${esc(s.data[x] || '')}</td>`).join('')}
+        <td><button class="btn xs dn" onclick="delStudent('${s.id}')">×</button></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table></div>
+  <div class="hint" style="margin-top:8px">Kisi bhi cell pe click karke seedha edit kar sakte ho. Photo cell pe click = us student ki photo badlo.</div>`;
+}
+function editCell(id, field, val){
+  const s = S.students.find(x => x.id === id);
+  if(!s) return;
+  const v = String(val).trim();
+  if(s.data[field] === v) return;
+  s.data[field] = v;
+  if($('photoMode').value === 'field' && field === $('photoKey').value) linkPhotos();
+  else renderStudents();
+}
+function delStudent(id){
+  S.students = S.students.filter(s => s.id !== id);
+  renderStudents(); markDone();
+}
+function checkAll(v){ document.querySelectorAll('.rowchk').forEach(c => c.checked = v); }
+function deleteChecked(){
+  const ids = [...document.querySelectorAll('.rowchk')].filter(c => c.checked).map(c => c.dataset.id);
+  if(!ids.length) return toast('Koi row select nahi', 'err');
+  if(!confirm(ids.length + ' students delete karein?')) return;
+  S.students = S.students.filter(s => !ids.includes(s.id));
+  renderStudents(); markDone();
+  toast(ids.length + ' deleted');
+}
+function clearStudents(){
+  if(!S.students.length) return;
+  if(!confirm('Saare students hat jayenge. Sure?')) return;
+  S.students = [];
+  renderStudents(); markDone();
+}
+</script>
+<script>
+/* ---------------- PREVIEW ---------------- */
+async function renderPreview(){
+  const grid = $('previewGrid');
+  const f = studentFields();
+  const sideKey = (S.twoSided && $('pvSide').value === 'back') ? 'back' : 'front';
+
+  let list = S.students.slice();
+  const filt = $('pvFilter').value;
+  if(filt === 'bad') list = list.filter(isIncomplete);
+  if(filt === 'nophoto') list = list.filter(s => !s.photo && studentPhotoFields().length);
+  const cnt = $('pvCount').value;
+  const shown = cnt === 'all' ? list : list.slice(0, parseInt(cnt));
+
+  updateStats();
+
+  if(!S.students.length){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="big">▦</div>
+      <div class="hint">Pehle tab 3 me students add karo.</div></div>`;
+    return;
+  }
+  if(!shown.length){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="hint">Is filter me koi student nahi — sab theek hai.</div></div>`;
+    return;
+  }
+
+  grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="hint">Rendering…</div></div>`;
+  await ensureFonts();
+
+  const s = 4.2;                       // px per mm for preview
+  const frag = document.createDocumentFragment();
+  for(const stu of shown){
+    const cell = document.createElement('div');
+    cell.className = 'prev-cell' + (isIncomplete(stu) ? ' warn' : '');
+    const cv = await renderCardCanvas(sideKey, stu, s, false);
+    cv.style.width = Math.round(S.card.w * s) + 'px';
+    cell.appendChild(cv);
+    const nm = document.createElement('div');
+    nm.className = 'nm';
+    nm.textContent = stu.data[f[0]] || '(no name)';
+    cell.appendChild(nm);
+    const miss = f.filter(x => !stu.data[x]);
+    if(miss.length || (!stu.photo && studentPhotoFields().length)){
+      const w = document.createElement('div');
+      w.className = 'hint';
+      w.style.color = 'var(--red)';
+      w.textContent = 'Missing: ' + miss.concat(!stu.photo && studentPhotoFields().length ? ['photo'] : []).join(', ');
+      cell.appendChild(w);
+    }
+    frag.appendChild(cell);
+  }
+  grid.innerHTML = '';
+  grid.appendChild(frag);
+}
+
+function updateStats(){
+  const f = studentFields();
+  $('pvStu').textContent = S.students.length;
+  $('pvSize').textContent = `${S.card.w} × ${S.card.h}`;
+  $('pvFields').textContent = f.length + studentPhotoFields().length;
+  $('pvMiss').textContent = S.students.filter(isIncomplete).length;
+  $('pvNoPhoto').textContent = studentPhotoFields().length ? S.students.filter(s => !s.photo).length : 0;
+  $('exStu').textContent = S.students.length;
+  const dpi = parseInt($('dpi').value);
+  $('exPx').textContent = Math.round(S.card.w/25.4*dpi) + ' × ' + Math.round(S.card.h/25.4*dpi);
+  updatePatHint();
+  calcLayout();
+}
+function updatePatHint(){
+  const f = studentFields();
+  $('patHint').innerHTML = 'Available: ' + (f.length ? f.map(x => `<code>{${x.toLowerCase().replace(/\s+/g,'')}}</code>`).join(' ') + ' <code>{n}</code>' : '—');
+}
+
+/* ---------------- PAGE LAYOUT ---------------- */
+const PAGES = {a4:[210,297], a3:[297,420], letter:[215.9,279.4], legal:[215.9,355.6]};
+function pageDims(){
+  const [w, h] = PAGES[$('pageSize').value];
+  return S.orient === 'l' ? [h, w] : [w, h];
+}
+function setOrient(o){
+  S.orient = o;
+  $('orP').classList.toggle('on', o === 'p');
+  $('orL').classList.toggle('on', o === 'l');
+  calcLayout();
+}
+function setCut(v){
+  S.cut = v;
+  $('cmOn').classList.toggle('on', !!v);
+  $('cmOff').classList.toggle('on', !v);
+  drawSheetPreview();
+}
+function calcLayout(){
+  const [pw, ph] = pageDims();
+  const m = parseFloat($('pMargin').value) || 0;
+  const g = parseFloat($('pGap').value) || 0;
+  const availW = pw - m*2, availH = ph - m*2;
+  const cols = Math.max(0, Math.floor((availW + g) / (S.card.w + g)));
+  const rows = Math.max(0, Math.floor((availH + g) / (S.card.h + g)));
+  const per = cols * rows;
+  const n = S.students.length;
+  $('exPer').textContent = per;
+  $('exPages').textContent = per ? Math.ceil(n / per) * (S.twoSided && $('backMode') && $('backMode').value !== 'none' ? 2 : 1) : 0;
+  $('layoutInfo').innerHTML = per
+    ? `Page pe <b>${cols} × ${rows} = ${per}</b> cards aayenge. Total <b>${per ? Math.ceil(n/per) : 0}</b> sheets.`
+    : `<span style="color:var(--red)">Card is page pe fit nahi ho raha — margin ghatao ya bada page size lo.</span>`;
+  drawSheetPreview();
+  return {pw, ph, m, g, cols, rows, per};
+}
+function drawSheetPreview(){
+  const [pw, ph] = pageDims();
+  const m = parseFloat($('pMargin').value) || 0;
+  const g = parseFloat($('pGap').value) || 0;
+  const cols = Math.max(0, Math.floor((pw - m*2 + g) / (S.card.w + g)));
+  const rows = Math.max(0, Math.floor((ph - m*2 + g) / (S.card.h + g)));
+  const cv = $('sheetPrev');
+  const sc = Math.min(330/pw, 430/ph);
+  cv.width = Math.round(pw*sc*2); cv.height = Math.round(ph*sc*2);
+  cv.style.width = Math.round(pw*sc) + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, pw*sc, ph*sc);
+  ctx.strokeStyle = '#D5DDE6'; ctx.setLineDash([3,3]);
+  ctx.strokeRect(m*sc, m*sc, (pw-m*2)*sc, (ph-m*2)*sc);
+  ctx.setLineDash([]);
+  const totalW = cols*S.card.w + (cols-1)*g, totalH = rows*S.card.h + (rows-1)*g;
+  const ox = (pw - totalW)/2, oy = (ph - totalH)/2;
+  let n = 0;
+  for(let r = 0; r < rows; r++) for(let c = 0; c < cols; c++){
+    const x = (ox + c*(S.card.w+g))*sc, y = (oy + r*(S.card.h+g))*sc;
+    ctx.fillStyle = n < S.students.length ? '#E7F0FA' : '#F7F9FB';
+    ctx.strokeStyle = n < S.students.length ? '#2563A8' : '#BCC7D3';
+    ctx.lineWidth = 0.8;
+    rrPath(ctx, x, y, S.card.w*sc, S.card.h*sc, (S.card.r||0)*sc);
+    ctx.fill(); ctx.stroke();
+    n++;
+  }
+  ctx.fillStyle = '#5C6B7A';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${cols} × ${rows} per page`, pw*sc/2, ph*sc - 6);
+}
+
+/* ---------------- EXPORT HELPERS ---------------- */
+function showProg(t){ $('progWrap').style.display = 'block'; $('progTxt').textContent = t; $('progBar').style.width = '0%'; CANCEL = false; }
+function setProg(i, n, t){ $('progBar').style.width = (i/n*100) + '%'; if(t) $('progTxt').textContent = t; }
+function hideProg(){ $('progWrap').style.display = 'none'; }
+const yieldUI = () => new Promise(r => setTimeout(r, 0));
+
+function fileNameFor(stu, i){
+  const pat = $('namePat').value || '{n}';
+  const norm = x => String(x).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const keys = Object.keys(stu.data);
+  const out = pat.replace(/\{([^}]+)\}/g, (m, k) => {
+    const key = norm(k);
+    if(key === 'n') return String(i+1).padStart(3, '0');
+    /* {roll} should find "Roll No", {father} should find "Father Name" */
+    const f = keys.find(x => norm(x) === key)
+           || keys.find(x => norm(x).startsWith(key))
+           || keys.find(x => norm(x).includes(key));
+    return f ? String(stu.data[f]) : '';
+  });
+  return (out.replace(/[\\\/:*?"<>|]/g, '_').replace(/_{2,}/g, '_')
+             .replace(/\s+/g, ' ').replace(/^[_\s-]+|[_\s-]+$/g, '').trim() || 'card_' + (i+1));
+}
+
+function drawCutMarks(pdf, x, y, w, h, len){
+  pdf.setDrawColor(150); pdf.setLineWidth(0.12);
+  pdf.line(x, y - len, x, y - 0.6);         pdf.line(x + w, y - len, x + w, y - 0.6);
+  pdf.line(x, y + h + 0.6, x, y + h + len); pdf.line(x + w, y + h + 0.6, x + w, y + h + len);
+  pdf.line(x - len, y, x - 0.6, y);         pdf.line(x - len, y + h, x - 0.6, y + h);
+  pdf.line(x + w + 0.6, y, x + w + len, y); pdf.line(x + w + 0.6, y + h, x + w + len, y + h);
+}
+
+/* ---------------- EXPORT: PRINT SHEET PDF ---------------- */
+async function exportPDF(){
+  if(!S.students.length) return toast('Koi student nahi', 'err');
+  const L = calcLayout();
+  if(!L.per) return toast('Card page pe fit nahi ho raha', 'err');
+  const dpi = parseInt($('dpi').value);
+  const fmt = $('imgFmt').value;
+  const s = dpi/25.4;
+  const {jsPDF} = window.jspdf;
+  const [pw, ph] = pageDims();
+  const pdf = new jsPDF({orientation: S.orient === 'l' ? 'landscape' : 'portrait', unit:'mm', format: [pw, ph]});
+
+  const backMode = S.twoSided ? $('backMode').value : 'none';
+  const sideList = backMode === 'none' ? ['front'] : (backMode === 'alt' ? ['alt'] : ['front','back']);
+
+  showProg('Cards render ho rahe hain…');
+  await ensureFonts();
+
+  const totalW = L.cols*S.card.w + (L.cols-1)*L.g;
+  const totalH = L.rows*S.card.h + (L.rows-1)*L.g;
+  const ox = (pw - totalW)/2, oy = (ph - totalH)/2;
+  const chunkCount = Math.ceil(S.students.length / L.per);
+
+  let first = true, done = 0;
+  const totalJobs = S.students.length * (backMode === 'none' ? 1 : 2);
+
+  const renderPage = async (chunkIdx, sideKey, mirror) => {
+    if(!first) pdf.addPage([pw, ph], S.orient === 'l' ? 'landscape' : 'portrait');
+    first = false;
+    const slice = S.students.slice(chunkIdx*L.per, (chunkIdx+1)*L.per);
+    for(let i = 0; i < slice.length; i++){
+      if(CANCEL) return false;
+      const stu = slice[i];
+      let r = Math.floor(i / L.cols), c = i % L.cols;
+      if(mirror) c = L.cols - 1 - c;
+      const x = ox + c*(S.card.w + L.g), y = oy + r*(S.card.h + L.g);
+      const cv = await renderCardCanvas(sideKey, stu, s, false, true);
+      const data = fmt === 'png' ? cv.toDataURL('image/png') : cv.toDataURL('image/jpeg', 0.94);
+      pdf.addImage(data, fmt === 'png' ? 'PNG' : 'JPEG', x, y, S.card.w, S.card.h, undefined, 'FAST');
+      cv.width = cv.height = 0;
+      if(sideKey === 'front' || !S.twoSided) releasePhoto(stu.photo);
+      if(S.cut) drawCutMarks(pdf, x, y, S.card.w, S.card.h, 2.5);
+      done++;
+      setProg(done, totalJobs, `Card ${done} / ${totalJobs}`);
+      if(i % 2 === 0) await yieldUI();
+    }
+    return true;
+  };
+
+  try{
+    if(backMode === 'alt'){
+      for(let p = 0; p < chunkCount; p++){
+        if(!await renderPage(p, 'front', false)) break;
+        if(!await renderPage(p, 'back', true)) break;
+      }
+    } else {
+      for(let p = 0; p < chunkCount; p++) if(!await renderPage(p, 'front', false)) break;
+      if(backMode === 'after' && !CANCEL)
+        for(let p = 0; p < chunkCount; p++) if(!await renderPage(p, 'back', true)) break;
+    }
+    if(CANCEL){ hideProg(); return toast('Cancel kar diya'); }
+    setProg(1, 1, 'PDF save ho rahi hai…');
+    pdf.save('id-cards-sheet.pdf');
+    hideProg(); toast('PDF ready', 'ok');
+  }catch(e){ hideProg(); toast('Export fail: ' + e.message, 'err'); }
+}
+
+/* ---------------- EXPORT: ONE CARD PER PAGE ---------------- */
+async function exportOnePerPage(){
+  if(!S.students.length) return toast('Koi student nahi', 'err');
+  const dpi = parseInt($('dpi').value), fmt = $('imgFmt').value, s = dpi/25.4;
+  const {jsPDF} = window.jspdf;
+  const pdf = new jsPDF({orientation: S.card.w > S.card.h ? 'landscape' : 'portrait', unit:'mm', format:[S.card.w, S.card.h]});
+  showProg('Render…');
+  await ensureFonts();
+  const backOn = S.twoSided && $('backMode').value !== 'none';
+  let first = true, done = 0;
+  const total = S.students.length * (backOn ? 2 : 1);
+  try{
+    for(const stu of S.students){
+      for(const k of (backOn ? ['front','back'] : ['front'])){
+        if(CANCEL) break;
+        if(!first) pdf.addPage([S.card.w, S.card.h], S.card.w > S.card.h ? 'landscape' : 'portrait');
+        first = false;
+        const cv = await renderCardCanvas(k, stu, s, false, true);
+        const data = fmt === 'png' ? cv.toDataURL('image/png') : cv.toDataURL('image/jpeg', 0.94);
+        pdf.addImage(data, fmt === 'png' ? 'PNG' : 'JPEG', 0, 0, S.card.w, S.card.h, undefined, 'FAST');
+        done++; setProg(done, total, `Card ${done} / ${total}`);
+        await yieldUI();
+      }
+      if(CANCEL) break;
+    }
+    if(CANCEL){ hideProg(); return toast('Cancel kar diya'); }
+    pdf.save('id-cards.pdf');
+    hideProg(); toast('PDF ready', 'ok');
+  }catch(e){ hideProg(); toast('Export fail: ' + e.message, 'err'); }
+}
+
+/* ---------------- EXPORT: ZIP OF IMAGES ---------------- */
+async function exportZIP(){
+  if(!S.students.length) return toast('Koi student nahi', 'err');
+  if(typeof JSZip === 'undefined') return toast('ZIP library load nahi hui', 'err');
+  const dpi = parseInt($('dpi').value), fmt = $('imgFmt').value, s = dpi/25.4;
+  const zip = new JSZip();
+  showProg('Cards render ho rahe hain…');
+  await ensureFonts();
+  const backOn = S.twoSided && $('backMode').value !== 'none';
+  const used = {};
+  try{
+    for(let i = 0; i < S.students.length; i++){
+      if(CANCEL) break;
+      const stu = S.students[i];
+      const raw = fileNameFor(stu, i);
+      used[raw] = (used[raw] || 0) + 1;
+      const base = used[raw] > 1 ? raw + '_' + used[raw] : raw;
+      for(const k of (backOn ? ['front','back'] : ['front'])){
+        const cv = await renderCardCanvas(k, stu, s, false, fmt !== 'png');
+        const blob = await new Promise(r => cv.toBlob(r, fmt === 'png' ? 'image/png' : 'image/jpeg', 0.94));
+        zip.file(base + (backOn ? '_' + k : '') + '.' + (fmt === 'png' ? 'png' : 'jpg'), blob);
+        cv.width = cv.height = 0;
+      }
+      releasePhoto(stu.photo);
+      setProg(i+1, S.students.length, `Card ${i+1} / ${S.students.length}`);
+      await yieldUI();
+    }
+    if(CANCEL){ hideProg(); return toast('Cancel kar diya'); }
+    setProg(1, 1, 'ZIP bann rahi hai…');
+    const blob = await zip.generateAsync({type:'blob', compression:'STORE'}, md => setProg(md.percent, 100, 'Zipping ' + Math.round(md.percent) + '%'));
+    dl(blob, 'id-cards.zip');
+    hideProg(); toast('ZIP ready', 'ok');
+  }catch(e){ hideProg(); toast('Export fail: ' + e.message, 'err'); }
+}
+
+/* ---------------- EXPORT: SINGLE ---------------- */
+function exportSingle(){
+  if(!S.students.length) return toast('Koi student nahi', 'err');
+  const f = studentFields();
+  $('singleSel').innerHTML = S.students.map((s, i) =>
+    `<option value="${s.id}">${esc((s.data[f[0]] || '(no name)') + (f[1] ? ' — ' + (s.data[f[1]] || '') : ''))}</option>`).join('');
+  $('singleOvl').classList.add('on');
+}
+async function doSingle(type){
+  const id = $('singleSel').value;
+  const stu = S.students.find(s => s.id === id);
+  if(!stu) return;
+  const dpi = parseInt($('dpi').value), s = dpi/25.4;
+  const i = S.students.indexOf(stu);
+  const name = fileNameFor(stu, i);
+  $('singleOvl').classList.remove('on');
+  showProg('Render…');
+  const backOn = S.twoSided && $('backMode').value !== 'none';
+  try{
+    if(type === 'png'){
+      for(const k of (backOn ? ['front','back'] : ['front'])){
+        const cv = await renderCardCanvas(k, stu, s, false);
+        const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+        dl(blob, name + (backOn ? '_' + k : '') + '.png');
+      }
+    } else {
+      const {jsPDF} = window.jspdf;
+      const pdf = new jsPDF({orientation: S.card.w > S.card.h ? 'landscape' : 'portrait', unit:'mm', format:[S.card.w, S.card.h]});
+      let first = true;
+      for(const k of (backOn ? ['front','back'] : ['front'])){
+        if(!first) pdf.addPage([S.card.w, S.card.h], S.card.w > S.card.h ? 'landscape' : 'portrait');
+        first = false;
+        const cv = await renderCardCanvas(k, stu, s, false, true);
+        pdf.addImage(cv.toDataURL('image/png'), 'PNG', 0, 0, S.card.w, S.card.h, undefined, 'FAST');
+      }
+      pdf.save(name + '.pdf');
+    }
+    hideProg(); toast('Download ready', 'ok');
+  }catch(e){ hideProg(); toast('Fail: ' + e.message, 'err'); }
+}
+
+/* ---------------- PROJECT SAVE / LOAD ---------------- */
+function saveProject(){
+  const data = {
+    _app:'ID Card Studio', _v:2, savedAt:new Date().toISOString(),
+    card:S.card, twoSided:S.twoSided, sides:S.sides,
+    school:S.school, students:S.students, photos:S.photos, photoOrder:S.photoOrder,
+    ui:{photoMode:$('photoMode').value, photoKey:$('photoKey').value, namePat:$('namePat').value}
+  };
+  const json = JSON.stringify(data);
+  const mb = json.length/1048576;
+  if(mb > 60 && !confirm(`Project file ~${Math.round(mb)} MB ki hai (photos ke saath). Save karein?`)) return;
+  dl(new Blob([json], {type:'application/json'}), 'id-card-project.json');
+  toast('Project save ho gaya', 'ok');
+}
+async function loadProject(file){
+  if(!file) return;
+  try{
+    const o = JSON.parse(await file.text());
+    if(o.card) S.card = o.card;
+    S.twoSided = !!o.twoSided;
+    if(o.sides) S.sides = {front:o.sides.front || BLANK_SIDE(), back:o.sides.back || BLANK_SIDE()};
+    else if(o.els) S.sides.front = Object.assign(BLANK_SIDE(), {els:o.els});
+    S.school = o.school || {};
+    S.students = o.students || [];
+    S.photos = o.photos || {};
+    S.photoOrder = o.photoOrder || Object.keys(S.photos);
+    S.side = 'front'; sel = [];
+    for(const k of ['front','back']) for(const e of S.sides[k].els) if(!e.id) e.id = uid();
+    syncSizeInputs(); syncSideUI();
+    buildPhotoKeys();
+    if(o.ui){
+      if(o.ui.photoMode) $('photoMode').value = o.ui.photoMode;
+      if(o.ui.photoKey) $('photoKey').value = o.ui.photoKey;
+      if(o.ui.namePat) $('namePat').value = o.ui.namePat;
+    }
+    HIST = []; HPOS = -1; snapshot();
+    refreshAll(); fitZoom();
+    toast('Project load ho gaya — ' + S.students.length + ' students', 'ok');
+  }catch(e){ toast('Project file padhi nahi gayi', 'err'); }
+}
+
+/* ---------------- TABS & REFRESH ---------------- */
+function goTab(i){
+  document.querySelectorAll('.tab').forEach((t, n) => t.classList.toggle('on', n === i));
+  document.querySelectorAll('.page').forEach((p, n) => p.classList.toggle('on', n === i));
+  if(i === 0) { drawStage(); fitZoom(); }
+  if(i === 1){ buildSchoolForm(); schoolPreview(); }
+  if(i === 2){ buildManualForm(); buildPhotoKeys(); renderStudents(); }
+  if(i === 3){ updateStats(); renderPreview(); }
+  if(i === 4){ updateStats(); calcLayout(); }
+  markDone();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => goTab(+t.dataset.t));
+
+function markDone(){
+  const t = document.querySelectorAll('.tab');
+  const hasTpl = S.sides.front.els.length > 0;
+  t[0].classList.toggle('done', hasTpl);
+  t[1].classList.toggle('done', Object.keys(S.school).length > 0);
+  t[2].classList.toggle('done', S.students.length > 0);
+  t[3].classList.toggle('done', S.students.length > 0);
+  const b = $('tplBadge');
+  b.textContent = hasTpl ? `${S.sides.front.els.length + (S.twoSided ? S.sides.back.els.length : 0)} elements · ${S.card.w}×${S.card.h}mm` : 'No template';
+  b.className = hasTpl ? 'chip t' : 'chip a';
+}
+function refreshSelUI(){ buildOverlay(); renderProps(); renderLayers(); renderCoordMap(); readCoord(); }
+function refreshAll(){
+  drawStage(); renderProps(); renderLayers(); renderCoordMap(); readCoord();
+  buildSchoolForm(); buildManualForm(); buildPhotoKeys(); renderStudents();
+  updIdealPx(); markDone(); updateStats();
+}
+
+/* ---------------- DRAG & DROP ZONES ---------------- */
+function dropZone(node, handler){
+  ['dragenter','dragover'].forEach(ev => node.addEventListener(ev, e => { e.preventDefault(); node.classList.add('hv'); }));
+  ['dragleave','drop'].forEach(ev => node.addEventListener(ev, e => { e.preventDefault(); node.classList.remove('hv'); }));
+  node.addEventListener('drop', e => {
+    const items = e.dataTransfer.items;
+    if(items && items.length && items[0].webkitGetAsEntry){
+      const entries = [...items].map(i => i.webkitGetAsEntry()).filter(Boolean);
+      if(entries.some(en => en.isDirectory)){
+        collectEntries(entries).then(files => handler(files));
+        return;
+      }
+    }
+    handler(e.dataTransfer.files);
+  });
+}
+function collectEntries(entries){
+  const out = [];
+  const walk = en => new Promise(res => {
+    if(en.isFile) en.file(f => { out.push(f); res(); }, res);
+    else if(en.isDirectory){
+      const rd = en.createReader();
+      const readAll = () => rd.readEntries(async list => {
+        if(!list.length) return res();
+        for(const e of list) await walk(e);
+        readAll();
+      }, res);
+      readAll();
+    } else res();
+  });
+  return Promise.all(entries.map(walk)).then(() => out);
+}
+
+/* ---------------- LIGHT SOURCE GUARD (as in v1) ---------------- */
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+  const k = (e.key || '').toLowerCase();
+  if(k === 'f12') e.preventDefault();
+  if((e.ctrlKey || e.metaKey) && e.shiftKey && ['i','j','c'].includes(k)) e.preventDefault();
+  if((e.ctrlKey || e.metaKey) && k === 'u') e.preventDefault();
+});
+
+/* ---------------- INIT ---------------- */
+function init(){
+  buildIconPicker();
+  dropZone($('bgDrop'), files => files[0] && loadBg(files[0]));
+  dropZone($('csvDrop'), files => files[0] && loadSheet(files[0]));
+  dropZone($('photoDrop'), files => { if(files && files.length) loadPhotos(files); });
+  setOrient('p'); setCut(1);
+  starterTemplate();
+  HIST = []; HPOS = -1; snapshot();
+  syncSideUI();
+  window.addEventListener('resize', () => { if($('p0').classList.contains('on')) fitZoom(); });
+  ensureFonts().then(() => { drawStage(); });
+  updUndoBtns();
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+</script>
+</body>
+</html>

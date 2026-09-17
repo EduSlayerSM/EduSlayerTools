@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Box Studio — Bulk Photo Fitter | Developed by Amar Bhardwaj</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+:root{
+  --ink:#16222F; --ink-2:#2B3A4A; --ink-3:#5C6B7A;
+  --paper:#EEF1F5; --panel:#FFFFFF; --panel-2:#F7F9FB;
+  --line:#D5DDE6; --line-2:#BCC7D3;
+  --amber:#E8912B; --amber-soft:#FDF2E2;
+  --teal:#0E7C6B; --teal-soft:#E3F3F0;
+  --red:#C23B2E; --red-soft:#FBEBE9;
+  --blue:#2563A8; --blue-soft:#E7F0FA;
+  --r:7px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--paper);color:var(--ink);
+  font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:20px;border:3px solid var(--paper)}
+
+.topbar{background:var(--ink);color:#fff;padding:0 18px;display:flex;align-items:center;gap:16px;
+  height:54px;position:sticky;top:0;z-index:60}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}
+.brand .by{font-weight:400;font-size:11px;color:rgba(255,255,255,.58);margin-left:2px}
+.brand .mk{width:26px;height:26px;border-radius:5px;background:var(--amber);display:grid;
+  place-items:center;color:var(--ink);font-size:13px;font-weight:700}
+.tb-btn{background:rgba(255,255,255,.1);border:none;color:#fff;padding:7px 13px;border-radius:6px;font-size:13px}
+.tb-btn:hover{background:rgba(255,255,255,.2)}
+
+.wrap{padding:16px;max-width:1720px;margin:0 auto}
+.split{display:grid;grid-template-columns:290px minmax(0,1fr) 300px;gap:14px;align-items:start}
+@media(max-width:1250px){.split{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:14px}
+.card-h{padding:10px 14px;border-bottom:1px solid var(--line);font-weight:700;font-size:13px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-b{padding:13px}
+.card-b.tight{padding:9px}
+
+.fld{margin-bottom:10px}
+.fld:last-child{margin-bottom:0}
+label.lb{display:block;font-size:11.5px;font-weight:500;color:var(--ink-3);margin-bottom:4px}
+.in{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--panel-2);font-size:13px;outline:none}
+.in:focus{border-color:var(--amber);background:#fff;box-shadow:0 0 0 3px var(--amber-soft)}
+.in[type=color]{padding:2px;height:32px;cursor:pointer}
+.in[type=range]{padding:0;background:none;border:none;accent-color:var(--amber)}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+
+.btn{padding:8px 13px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--panel);
+  font-size:13px;font-weight:500}
+.btn:hover{background:var(--panel-2);border-color:var(--ink-3)}
+.btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.amb{background:var(--amber);color:#fff;border-color:var(--amber)}
+.btn.tl{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn.dn{color:var(--red);border-color:#E8BDB8}
+.btn.dn:hover{background:var(--red-soft)}
+.btn.sm{padding:5px 9px;font-size:12px}
+.btn.full{width:100%}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;
+  font-size:11.5px;font-weight:500;background:var(--paper);color:var(--ink-3)}
+.chip.a{background:var(--amber-soft);color:#8A5210}
+.chip.t{background:var(--teal-soft);color:#0A5A4D}
+.chip.r{background:var(--red-soft);color:#8E2A20}
+.hint{font-size:11.5px;color:var(--ink-3);line-height:1.5}
+.sep{height:1px;background:var(--line);margin:11px 0}
+.grp{font-size:10.5px;font-weight:700;color:var(--ink-3);margin:13px 0 6px;padding-bottom:4px;
+  border-bottom:1px solid var(--line)}
+.grp:first-child{margin-top:0}
+
+.drop{border:1.5px dashed var(--line-2);border-radius:9px;padding:16px;text-align:center;
+  background:var(--panel-2);cursor:pointer}
+.drop:hover,.drop.hv{border-color:var(--amber);background:var(--amber-soft)}
+.drop b{display:block;font-size:13px;margin-bottom:2px}
+
+/* stage */
+.stage{background:#59646F;background-image:
+  linear-gradient(45deg,#00000012 25%,transparent 25%,transparent 75%,#00000012 75%),
+  linear-gradient(45deg,#00000012 25%,transparent 25%,transparent 75%,#00000012 75%);
+  background-size:18px 18px;background-position:0 0,9px 9px;border-radius:10px;
+  padding:26px;display:flex;align-items:center;justify-content:center;min-height:470px}
+#holder{position:relative;box-shadow:0 8px 34px rgba(0,0,0,.38);touch-action:none;cursor:grab}
+#holder.grab{cursor:grabbing}
+#cv{display:block;border-radius:2px}
+#ovl{position:absolute;inset:0;pointer-events:none}
+
+.shape-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.shape-btn{border:1px solid var(--line);border-radius:7px;background:var(--panel);padding:7px 3px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;color:var(--ink-3)}
+.shape-btn.on{border-color:var(--amber);background:var(--amber-soft);color:var(--ink);font-weight:700}
+.shape-btn i{width:19px;height:19px;background:var(--ink-3);display:block}
+
+.strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px;
+  max-height:560px;overflow:auto;padding:3px}
+.th{border:1.5px solid var(--line);border-radius:8px;padding:4px;background:#fff;cursor:pointer;
+  position:relative;text-align:center}
+.th:hover{border-color:var(--amber)}
+.th.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink)}
+.th.done{border-color:var(--teal);background:var(--teal-soft)}
+.th.on.done{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal)}
+.th img{width:100%;height:62px;object-fit:cover;border-radius:5px;display:block}
+.th span{display:block;font-size:9px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.th .bg{position:absolute;top:2px;right:2px;background:var(--teal);color:#fff;border-radius:50%;
+  width:16px;height:16px;font-size:10px;line-height:16px;font-weight:700}
+.th .num{position:absolute;top:2px;left:2px;background:rgba(22,34,47,.72);color:#fff;
+  border-radius:4px;padding:0 4px;font-size:9px;font-weight:600}
+
+.prog{height:7px;background:var(--paper);border-radius:20px;overflow:hidden;margin:9px 0}
+.prog i{display:block;height:100%;background:var(--amber);width:0;transition:width .2s}
+.stat{display:flex;gap:10px;flex-wrap:wrap}
+.stat .b{background:var(--panel-2);border-radius:8px;padding:8px 13px;min-width:82px}
+.stat .b .k{font-size:11px;color:var(--ink-3);font-weight:500}
+.stat .b .v{font-size:19px;font-weight:700;line-height:1.3}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;z-index:200;
+  transition:transform .25s;box-shadow:0 8px 28px rgba(0,0,0,.28);max-width:90vw}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}.toast.ok{background:var(--teal)}
+.empty{padding:46px 20px;text-align:center;color:var(--ink-3)}
+.empty .big{font-size:34px;opacity:.28;margin-bottom:8px}
+kbd{background:var(--paper);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:4px;
+  padding:1px 5px;font-size:11px}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#holder.pick{cursor:crosshair}
+.sw{width:30px;height:30px;border-radius:6px;border:2px solid var(--line-2);flex:none}
+.tog{display:flex;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);padding:2px;gap:2px}
+.tog button{flex:1;border:none;background:none;padding:6px 6px;border-radius:5px;font-size:12px;
+  font-weight:500;color:var(--ink-3)}
+.tog button.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.09)}
+.mini{font-size:11px;color:var(--ink-3);min-width:38px;text-align:right;font-variant-numeric:tabular-nums}
+.srow{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+.srow .lbl{font-size:11.5px;color:var(--ink-3);min-width:74px}
+.srow input[type=range]{flex:1}
+</style>
+
+<div class="topbar">
+  <div class="brand"><span class="mk">PB</span> Photo Box Studio <span class="by">Developed by Amar Bhardwaj</span></div>
+  <span class="chip a" id="boxBadge">—</span>
+  <div style="flex:1"></div>
+  <button class="tb-btn" onclick="saveSession()">Save work</button>
+  <button class="tb-btn" onclick="sess.click()">Open work</button>
+  <input type="file" id="sess" accept=".json" hidden onchange="loadSession(this.files[0])">
+</div>
+
+<div class="wrap">
+<div class="split">
+
+  <!-- ================= LEFT : BOX SETUP ================= -->
+  <div>
+    <div class="card">
+      <div class="card-h">1 · Photo box ka size</div>
+      <div class="card-b">
+        <div class="fld">
+          <label class="lb">Ready preset</label>
+          <select class="in" id="preset" onchange="applyPreset()">
+            <option value="25,32">ID card photo — 25 × 32 mm</option>
+            <option value="35,45" selected>Passport size — 35 × 45 mm</option>
+            <option value="30,30">Square — 30 × 30 mm</option>
+            <option value="51,51">2×2 inch — 51 × 51 mm</option>
+            <option value="25,25">Round badge — 25 × 25 mm</option>
+            <option value="40,50">School ID — 40 × 50 mm</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label class="lb">Unit</label>
+          <div class="row">
+            <select class="in" id="unit" onchange="onBox()">
+              <option value="mm" selected>Millimetre (print)</option>
+              <option value="px">Pixels (direct)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label class="lb">Width</label><input class="in" type="number" id="bw" value="35" step="0.5" min="1" oninput="onBox()"></div>
+          <div class="fld"><label class="lb">Height</label><input class="in" type="number" id="bh" value="45" step="0.5" min="1" oninput="onBox()"></div>
+        </div>
+        <div class="fld" id="dpiRow">
+          <label class="lb">Print quality (DPI)</label>
+          <select class="in" id="dpi" onchange="onBox()">
+            <option value="150">150 — draft</option>
+            <option value="300" selected>300 — print quality</option>
+            <option value="600">600 — ultra sharp</option>
+          </select>
+        </div>
+        <div class="hint">Output size: <b id="outPx">—</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">2 · Shape aur style</div>
+      <div class="card-b">
+        <label class="lb">Shape</label>
+        <div class="shape-row" id="shapeRow" style="margin-bottom:11px"></div>
+        <div class="fld" id="radRow">
+          <label class="lb">Corner radius (<span id="radU">mm</span>)</label>
+          <input class="in" type="number" id="rad" value="2" step="0.5" min="0" oninput="onBox()">
+        </div>
+        <div class="grid2">
+          <div class="fld"><label class="lb">Border thickness</label>
+            <input class="in" type="number" id="bdw" value="0" step="0.2" min="0" oninput="onBox()"></div>
+          <div class="fld"><label class="lb">Border colour</label>
+            <input class="in" type="color" id="bdc" value="#16222F" oninput="onBox()"></div>
+        </div>
+        <div class="fld">
+          <label class="lb">Background (photo ke peeche)</label>
+          <div class="row">
+            <select class="in" id="bgMode" onchange="onBox()">
+              <option value="none">Transparent (PNG)</option>
+              <option value="color" selected>Solid colour</option>
+              <option value="grad">Gradient (do colour)</option>
+            </select>
+            <input class="in" type="color" id="bgCol" value="#FFFFFF" style="max-width:56px" oninput="onBox()">
+            <input class="in" type="color" id="bgCol2" value="#C9D6E3" style="max-width:56px;display:none" oninput="onBox()">
+          </div>
+        </div>
+        <div class="sep"></div>
+        <div class="fld">
+          <label class="lb">Output format</label>
+          <select class="in" id="fmt">
+            <option value="png" selected>PNG — best quality</option>
+            <option value="jpeg">JPEG — chhoti file</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label class="lb">File name</label>
+          <select class="in" id="namePat">
+            <option value="orig" selected>Original filename</option>
+            <option value="num">photo_1, photo_2 …</option>
+            <option value="orig_n">Original + number</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <span>3 · Background badlo</span>
+        <span class="chip" id="ckChip">Off</span>
+      </div>
+      <div class="card-b">
+        <div class="tog" style="margin-bottom:10px">
+          <button class="on" id="ckOff" onclick="setCK(0)">Original</button>
+          <button id="ckOn" onclick="setCK(1)">Background hatao</button>
+        </div>
+        <div id="ckPanel" style="display:none">
+          <div class="fld">
+            <label class="lb">Purana background kaisa hai</label>
+            <select class="in" id="ckMode" onchange="ckChange(1)">
+              <option value="chroma" selected>Green / Blue screen (parda)</option>
+              <option value="rgb">Koi bhi plain colour (safed deewar, neela cloth…)</option>
+            </select>
+          </div>
+          <div class="fld">
+            <label class="lb">Konsa colour hatana hai</label>
+            <div class="row" style="align-items:center">
+              <select class="in" id="ckAuto" onchange="ckChange(1)">
+                <option value="1" selected>Auto — har photo se khud pakdo</option>
+                <option value="0">Main khud chunuga</option>
+              </select>
+              <div class="sw" id="ckSw" style="background:#00B140"></div>
+            </div>
+            <div class="row" style="margin-top:7px">
+              <button class="btn sm" id="ckPickBtn" onclick="startPick()">🎯 Photo pe click karke colour lo</button>
+              <input class="in" type="color" id="ckCol" value="#00B140" style="max-width:52px" oninput="ckChange(1)">
+            </div>
+          </div>
+          <div class="sep"></div>
+          <div class="srow"><span class="lbl">Kitna hatao</span>
+            <input type="range" class="in" id="ckTol" min="0" max="120" step="1" value="32" oninput="ckChange()">
+            <span class="mini" id="ckTolL">32</span></div>
+          <div class="srow"><span class="lbl">Kinare mulayam</span>
+            <input type="range" class="in" id="ckSoft" min="0" max="90" step="1" value="22" oninput="ckChange()">
+            <span class="mini" id="ckSoftL">22</span></div>
+          <div class="srow"><span class="lbl">Rang ki chhaya</span>
+            <input type="range" class="in" id="ckSpill" min="0" max="100" step="1" value="60" oninput="ckChange()">
+            <span class="mini" id="ckSpillL">60%</span></div>
+          <div class="hint">Baal ya kinare kat rahe hain to <b>"Kitna hatao"</b> kam karo. Background ka
+          hara rang abhi bhi dikh raha hai to badhao. Chehre pe hari jhalak aa rahi ho to
+          <b>"Rang ki chhaya"</b> badhao.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">4 · Photos load karo</div>
+      <div class="card-b">
+        <div class="drop" id="drop" onclick="dirInp.click()">
+          <b>📁 Poora folder select karo</b>
+          <span class="hint">Folder drag-drop bhi chalega · subfolder bhi padh lega</span>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm" onclick="dirInp.click()">Folder</button>
+          <button class="btn sm" onclick="fileInp.click()">Photos (bulk)</button>
+          <button class="btn sm" onclick="oneInp.click()">Ek photo</button>
+        </div>
+        <input type="file" id="dirInp" accept="image/*" multiple webkitdirectory directory hidden onchange="addFiles(this.files);this.value=''">
+        <input type="file" id="fileInp" accept="image/*" multiple hidden onchange="addFiles(this.files);this.value=''">
+        <input type="file" id="oneInp" accept="image/*" hidden onchange="addFiles(this.files);this.value=''">
+        <div class="hint" style="margin-top:9px" id="loadStat">Abhi koi photo nahi.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CENTER : EDITOR ================= -->
+  <div>
+    <div class="card">
+      <div class="card-h">
+        <span id="edTitle">Photo fit karo</span>
+        <span class="bar">
+          <button class="btn sm" onclick="go(-1)">‹ Pichhla</button>
+          <span class="chip" id="posLbl" style="min-width:74px;justify-content:center">0 / 0</span>
+          <button class="btn sm" onclick="go(1)">Agla ›</button>
+        </span>
+      </div>
+      <div class="stage" id="stage">
+        <div id="holder"><canvas id="cv"></canvas><canvas id="ovl"></canvas></div>
+      </div>
+
+      <div class="card-b tight" style="border-top:1px solid var(--line)">
+        <div class="bar" style="margin-bottom:9px">
+          <span class="hint" style="font-weight:600;min-width:48px">Zoom</span>
+          <input class="in" type="range" id="zm" min="0.2" max="6" step="0.01" value="1"
+                 style="flex:1" oninput="setZoom(+this.value)">
+          <span class="chip" id="zmLbl" style="min-width:58px;justify-content:center">100%</span>
+          <button class="btn sm" onclick="nudgeZoom(-0.1)">−</button>
+          <button class="btn sm" onclick="nudgeZoom(0.1)">+</button>
+        </div>
+        <div class="bar" style="margin-bottom:9px">
+          <span class="hint" style="font-weight:600;min-width:48px">Ghumao</span>
+          <input class="in" type="range" id="rt" min="-180" max="180" step="0.5" value="0"
+                 style="flex:1" oninput="setRot(+this.value)">
+          <span class="chip" id="rtLbl" style="min-width:58px;justify-content:center">0°</span>
+          <button class="btn sm" onclick="rotBy(-90)">↺ 90</button>
+          <button class="btn sm" onclick="rotBy(90)">↻ 90</button>
+          <button class="btn sm" onclick="flipIt()">⇄ Flip</button>
+        </div>
+        <div class="bar" style="margin-bottom:9px">
+          <span class="hint" style="font-weight:600;min-width:48px">Look</span>
+          <span class="hint">Roshni</span>
+          <input type="range" class="in" id="fBr" min="0.5" max="1.6" step="0.01" value="1" style="flex:1" oninput="setFx('br',+this.value)">
+          <span class="hint">Contrast</span>
+          <input type="range" class="in" id="fCt" min="0.5" max="1.8" step="0.01" value="1" style="flex:1" oninput="setFx('ct',+this.value)">
+          <span class="hint">Rang</span>
+          <input type="range" class="in" id="fSa" min="0" max="2" step="0.01" value="1" style="flex:1" oninput="setFx('sa',+this.value)">
+          <button class="btn sm" onclick="resetFx()">Reset look</button>
+        </div>
+        <div class="bar">
+          <button class="btn sm" onclick="fitMode('cover')">Box bharo (cover)</button>
+          <button class="btn sm" onclick="fitMode('contain')">Poori photo (contain)</button>
+          <button class="btn sm" onclick="centerIt()">Center</button>
+          <button class="btn sm" onclick="resetIt()">Reset</button>
+          <div style="flex:1"></div>
+          <button class="btn sm" onclick="copyToRest()" title="Yahi zoom/position baaki sab photos pe">Sab pe lagao</button>
+          <button class="btn amb" onclick="saveNext()">✓ Save &amp; Next <kbd style="color:#fff;background:rgba(0,0,0,.2);border-color:transparent">Enter</kbd></button>
+        </div>
+        <div class="hint" style="margin-top:9px">
+          Photo ko <b>drag</b> karke idhar-udhar karo · <b>do ungli se pinch</b> karke zoom aur ghumao (mobile/touchpad) ·
+          <b>mouse wheel</b> se zoom (jahan cursor hai wahin se) ·
+          <kbd>↑↓←→</kbd> thoda khiskao · <kbd>Shift</kbd>+arrow tez · <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>Enter</kbd> save &amp; next
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">5 · Download</div>
+      <div class="card-b">
+        <div class="stat" style="margin-bottom:13px">
+          <div class="b"><div class="k">Total</div><div class="v" id="sTot">0</div></div>
+          <div class="b"><div class="k">Saved</div><div class="v" id="sDone" style="color:var(--teal)">0</div></div>
+          <div class="b"><div class="k">Baaki</div><div class="v" id="sLeft" style="color:var(--red)">0</div></div>
+          <div class="b"><div class="k">Har photo</div><div class="v" id="sPx" style="font-size:14px">—</div></div>
+        </div>
+        <div class="fld">
+          <label class="lb">ZIP me kya daalein</label>
+          <select class="in" id="zipWhat">
+            <option value="all" selected>Saari photos (jo save nahi ki, unpe auto-fit lagega)</option>
+            <option value="done">Sirf jo maine save ki hain</option>
+          </select>
+        </div>
+        <div class="grid3">
+          <button class="btn tl" onclick="exportZip()">📦 Sab ZIP me</button>
+          <button class="btn pri" onclick="exportOne()">⬇ Ye wali photo</button>
+          <button class="btn dn" onclick="clearAll()">Sab hatao</button>
+        </div>
+        <div id="pw" style="display:none;margin-top:12px">
+          <div class="hint" id="pt">Working…</div>
+          <div class="prog"><i id="pb"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= RIGHT : LIST ================= -->
+  <div>
+    <div class="card">
+      <div class="card-h">
+        <span>Photo list <span class="chip t" id="cnt">0</span></span>
+        <select class="in" id="filt" onchange="renderStrip()" style="width:auto;padding:4px 8px;font-size:12px">
+          <option value="all">Sab</option>
+          <option value="todo">Sirf baaki</option>
+          <option value="done">Sirf saved</option>
+        </select>
+      </div>
+      <div class="card-b tight">
+        <div class="strip" id="strip">
+          <div class="empty" style="grid-column:1/-1"><div class="big">🖼</div>
+            <div class="hint">Left se folder ya photos select karo</div></div>
+        </div>
+      </div>
+      <div class="card-b tight" style="border-top:1px solid var(--line)">
+        <div class="hint">Hari border = save ho chuki. Kisi bhi photo pe click karke wapas edit kar sakte ho —
+        tumhara zoom/position yaad rehta hai.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="off" style="position:absolute;left:-99999px;top:0"></div>
+
+<script>
+/* ===================== STATE ===================== */
+const $ = id => document.getElementById(id);
+let P = [];              // photos: {name,key,url,img,st,done}
+let IDX = -1;
+let BOX = { shape:'rounded' };
+const SHAPES = [
+  ['rect','Square'],['rounded','Rounded'],['circle','Circle'],['oval','Oval'],
+  ['squircle','Squircle'],['pill','Pill'],['hex','Hexagon'],['diamond','Diamond'],
+  ['shield','Shield'],['arch','Arch'],['star','Star'],['blob','Blob']
+];
+const newState = () => ({ zoom:1, px:0, py:0, rot:0, flip:0, br:1, ct:1, sa:1 });
+/* background-removal (chroma key) settings — sab photos pe ek saath lagti hain */
+let CK = { on:0, mode:'chroma', auto:1, color:'#00B140', tol:32, soft:22, spill:60 };
+let PICK = 0;
+
+function toast(m,k){ const t=$('toast'); t.textContent=m; t.className='toast on '+(k||'');
+  clearTimeout(t._k); t._k=setTimeout(()=>t.className='toast '+(k||''),2400); }
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ===================== BOX SETTINGS ===================== */
+function unit(){ return $('unit').value; }
+function outSize(){
+  const w=+$('bw').value||1, h=+$('bh').value||1;
+  if(unit()==='px') return [Math.round(w), Math.round(h)];
+  const d=+$('dpi').value||300;
+  return [Math.max(1,Math.round(w/25.4*d)), Math.max(1,Math.round(h/25.4*d))];
+}
+/* box unit -> output pixel factor (radius / border ke liye) */
+function uk(){ return unit()==='px' ? 1 : (+$('dpi').value||300)/25.4; }
+function applyPreset(){
+  const v=$('preset').value; if(v==='custom') return;
+  const [w,h]=v.split(',').map(Number);
+  $('unit').value='mm'; $('bw').value=w; $('bh').value=h; onBox();
+}
+function onBox(){
+  const px=unit()==='px';
+  $('dpiRow').style.display = px?'none':'';
+  $('radU').textContent = px?'px':'mm';
+  const [W,H]=outSize();
+  $('outPx').textContent = W+' × '+H+' px';
+  $('sPx').textContent = W+'×'+H;
+  $('boxBadge').textContent = $('bw').value+' × '+$('bh').value+' '+unit()+' · '+BOX.shape;
+  $('radRow').style.display = (BOX.shape==='rounded'||BOX.shape==='rect')?'':'none';
+  $('bgCol2').style.display = $('bgMode').value==='grad'?'':'none';
+  savePrefs(); draw(); renderStrip();
+}
+function setShape(s){ BOX.shape=s; drawShapeBtns(); onBox(); }
+function shapeGlyph(sh){
+  const st='width:19px;height:19px;background:var(--ink-3);display:block;';
+  if(sh==='rect') return '<i style="'+st+'"></i>';
+  if(sh==='rounded') return '<i style="'+st+'border-radius:5px"></i>';
+  if(sh==='circle'||sh==='oval') return '<i style="'+st+'border-radius:50%"></i>';
+  if(sh==='squircle') return '<i style="'+st+'border-radius:26%"></i>';
+  if(sh==='pill') return '<i style="'+st+'height:11px;border-radius:99px"></i>';
+  const clip={hex:'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+    diamond:'polygon(50% 0,100% 50%,50% 100%,0 50%)',
+    shield:'polygon(0 0,100% 0,100% 60%,50% 100%,0 60%)',
+    arch:'polygon(0 100%,0 40%,50% 0,100% 40%,100% 100%)',
+    star:'polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)',
+    blob:'polygon(50% 0,90% 8%,100% 45%,88% 88%,45% 100%,8% 86%,0 45%,12% 10%)'}[sh];
+  return '<i style="'+st+'clip-path:'+clip+'"></i>';
+}
+function drawShapeBtns(){
+  $('shapeRow').innerHTML = SHAPES.map(s=>
+    '<button class="shape-btn'+(BOX.shape===s[0]?' on':'')+'" onclick="setShape(\''+s[0]+'\')">'+
+    shapeGlyph(s[0])+'<span>'+s[1]+'</span></button>').join('');
+}
+
+/* ===================== SHAPE PATH ===================== */
+function tracePath(c,shape,w,h,r){
+  c.beginPath();
+  const L=pts=>pts.forEach((p,i)=> i? c.lineTo(p[0]*w,p[1]*h) : c.moveTo(p[0]*w,p[1]*h));
+  const rr=(rad)=>{
+    rad=Math.max(0,Math.min(rad,Math.min(w,h)/2));
+    c.moveTo(rad,0); c.lineTo(w-rad,0); c.quadraticCurveTo(w,0,w,rad);
+    c.lineTo(w,h-rad); c.quadraticCurveTo(w,h,w-rad,h);
+    c.lineTo(rad,h); c.quadraticCurveTo(0,h,0,h-rad);
+    c.lineTo(0,rad); c.quadraticCurveTo(0,0,rad,0);
+  };
+  if(shape==='rect'){ c.rect(0,0,w,h); }
+  else if(shape==='rounded'){ rr(r||0); }
+  else if(shape==='squircle'){ rr(Math.min(w,h)*0.26); }
+  else if(shape==='pill'){ rr(Math.min(w,h)/2); }
+  else if(shape==='circle'||shape==='oval'){ c.ellipse(w/2,h/2,w/2,h/2,0,0,Math.PI*2); }
+  else if(shape==='hex') L([[.5,0],[1,.25],[1,.75],[.5,1],[0,.75],[0,.25]]);
+  else if(shape==='diamond') L([[.5,0],[1,.5],[.5,1],[0,.5]]);
+  else if(shape==='shield'){ c.moveTo(0,0); c.lineTo(w,0); c.lineTo(w,h*.58);
+    c.quadraticCurveTo(w,h*.98,w/2,h); c.quadraticCurveTo(0,h*.98,0,h*.58); }
+  else if(shape==='arch'){ c.moveTo(0,h); c.lineTo(0,h*.42); c.quadraticCurveTo(0,0,w/2,0);
+    c.quadraticCurveTo(w,0,w,h*.42); c.lineTo(w,h); }
+  else if(shape==='star'){ const p=[]; for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, k=i%2?.4:.5;
+    p.push([.5+Math.cos(a)*k,.5+Math.sin(a)*k]); } L(p); }
+  else if(shape==='blob'){ c.moveTo(w*.5,0); c.bezierCurveTo(w*.95,0,w,h*.35,w,h*.55);
+    c.bezierCurveTo(w,h*.9,w*.72,h,w*.48,h); c.bezierCurveTo(w*.2,h,0,h*.85,0,h*.52);
+    c.bezierCurveTo(0,h*.2,w*.15,0,w*.5,0); }
+  else c.rect(0,0,w,h);
+  c.closePath();
+}
+
+/* ===================== CORE RENDER ===================== */
+/* har photo ko target W×H pixels me box ke hisaab se paint karta hai */
+function paint(c, W, H, rec, opt){
+  opt=opt||{};
+  c.clearRect(0,0,W,H);
+  const k = W / outSize()[0];                 // preview scale factor
+  const rad = (+$('rad').value||0) * uk() * k;
+  const bw  = (+$('bdw').value||0) * uk() * k;
+
+  c.save();
+  tracePath(c,BOX.shape,W,H,rad);
+  c.clip();
+  const bm=$('bgMode').value;
+  if(bm==='color'){ c.fillStyle=$('bgCol').value; c.fillRect(0,0,W,H); }
+  else if(bm==='grad'){
+    const g=c.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,$('bgCol').value); g.addColorStop(1,$('bgCol2').value);
+    c.fillStyle=g; c.fillRect(0,0,W,H);
+  }
+  const img = rec && rec.img && rec.img.width
+      ? ((CK.on && !opt.raw) ? processedFor(rec, opt.full?2600:900) : rec.img)
+      : null;
+  if(img && img.width){
+    const st0 = rec.st;
+    if(!opt.raw && 'filter' in c){
+      const f=[];
+      if(st0.br!=null && st0.br!==1) f.push('brightness('+st0.br+')');
+      if(st0.ct!=null && st0.ct!==1) f.push('contrast('+st0.ct+')');
+      if(st0.sa!=null && st0.sa!==1) f.push('saturate('+st0.sa+')');
+      c.filter = f.length? f.join(' ') : 'none';
+    }
+    const s0 = Math.max(W/img.width, H/img.height);
+    const st = rec.st;
+    const s  = s0 * st.zoom;
+    const dw = img.width*s, dh = img.height*s;
+    c.translate(W/2 + st.px*W, H/2 + st.py*H);
+    if(st.rot) c.rotate(st.rot*Math.PI/180);
+    if(st.flip) c.scale(-1,1);
+    c.imageSmoothingQuality='high';
+    c.drawImage(img,-dw/2,-dh/2,dw,dh);
+    if('filter' in c) c.filter='none';
+  }
+  c.restore();
+
+  if(bw>0){
+    c.save();
+    tracePath(c,BOX.shape,W,H,rad);
+    c.lineWidth=bw; c.strokeStyle=$('bdc').value; c.lineJoin='round';
+    c.clip();                                  // border andar ki taraf rakho
+    c.lineWidth=bw*2; c.stroke();
+    c.restore();
+  }
+}
+
+/* ===================== BACKGROUND REMOVE (CHROMA KEY) ===================== */
+function hex2rgb(h){
+  h=String(h||'').replace('#','');
+  if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  const n=parseInt(h,16)||0;
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+const _cb=(r,g,b)=>128-0.168736*r-0.331264*g+0.5*b;
+const _cr=(r,g,b)=>128+0.5*r-0.418688*g-0.081312*b;
+
+/* photo ke kinaron se background ka colour khud pakdo */
+function autoKey(img){
+  const n=48;
+  const cv=document.createElement('canvas'); cv.width=n; cv.height=n;
+  const c=cv.getContext('2d',{willReadFrequently:true});
+  try{ c.drawImage(img,0,0,n,n); }catch(e){ return [0,177,64]; }
+  let d;
+  try{ d=c.getImageData(0,0,n,n).data; }catch(e){ return [0,177,64]; }
+  const R=[],G=[],B=[];
+  const grab=(x,y)=>{ const i=(y*n+x)*4; R.push(d[i]); G.push(d[i+1]); B.push(d[i+2]); };
+  for(let x=0;x<n;x++){ grab(x,0); grab(x,1); grab(x,2); }          /* upar ki teen line */
+  for(let y=0;y<n;y++){ grab(0,y); grab(1,y); grab(n-1,y); grab(n-2,y); }  /* dono kinare */
+  const med=a=>{ a.sort((p,q)=>p-q); return a[a.length>>1]; };
+  return [med(R),med(G),med(B)];
+}
+function ckSig(){ return [CK.on,CK.mode,CK.auto,CK.color,CK.tol,CK.soft,CK.spill].join(','); }
+
+function buildProcessed(img, maxDim){
+  const k=Math.min(1, maxDim/Math.max(img.width,img.height));
+  const w=Math.max(1,Math.round(img.width*k)), h=Math.max(1,Math.round(img.height*k));
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  const c=cv.getContext('2d',{willReadFrequently:true});
+  c.drawImage(img,0,0,w,h);
+  let id;
+  try{ id=c.getImageData(0,0,w,h); }catch(e){ return cv; }
+  const d=id.data;
+  const key = CK.auto ? autoKey(img) : hex2rgb(CK.color);
+  const kr=key[0], kg=key[1], kb=key[2];
+  const kcb=_cb(kr,kg,kb), kcr=_cr(kr,kg,kb);
+  const rgbMode = CK.mode==='rgb';
+  const t0=CK.tol, t1=CK.tol+CK.soft+0.001, sp=CK.spill/100;
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i], g=d[i+1], b=d[i+2];
+    let dist;
+    if(rgbMode){
+      const dr=r-kr, dg=g-kg, db=b-kb;
+      dist=Math.sqrt(dr*dr+dg*dg+db*db)*0.62;
+    }else{
+      const x=_cb(r,g,b)-kcb, y=_cr(r,g,b)-kcr;
+      dist=Math.sqrt(x*x+y*y);
+    }
+    let a;
+    if(dist<=t0) a=0;
+    else if(dist>=t1) a=255;
+    else a=((dist-t0)/(t1-t0))*255;
+    if(a>0 && sp>0 && !rgbMode && dist < t1*1.9){
+      const mrb=Math.max(r,b);
+      if(g>mrb) d[i+1]=mrb+(g-mrb)*(1-sp);                 /* green spill */
+      else { const mrg=Math.max(r,g); if(b>mrg) d[i+2]=mrg+(b-mrg)*(1-sp); }  /* blue spill */
+    }
+    if(a<d[i+3]) d[i+3]=a;
+  }
+  c.putImageData(id,0,0);
+  return cv;
+}
+/* preview ke liye cache — settings badalne pe apne aap dobara banta hai */
+function processedFor(rec, maxDim){
+  if(!CK.on) return rec.img;
+  const sig=ckSig()+'|'+maxDim;
+  if(rec._pc && rec._sig===sig) return rec._pc;
+  const cv=buildProcessed(rec.img, maxDim);
+  if(maxDim<=1200){ rec._pc=cv; rec._sig=sig; }
+  return cv;
+}
+function invalidateCK(){ P.forEach(p=>{ p._pc=null; p._sig=null; }); }
+
+function setCK(on){
+  CK.on=on?1:0;
+  $('ckOn').classList.toggle('on',!!on);
+  $('ckOff').classList.toggle('on',!on);
+  $('ckPanel').style.display=on?'':'none';
+  $('ckChip').textContent=on?'On':'Off';
+  $('ckChip').className='chip '+(on?'t':'');
+  invalidateCK(); savePrefs(); draw();
+}
+let CKT=null;
+function ckChange(now){
+  CK.mode=$('ckMode').value;
+  CK.auto=+$('ckAuto').value;
+  CK.color=$('ckCol').value;
+  CK.tol=+$('ckTol').value; CK.soft=+$('ckSoft').value; CK.spill=+$('ckSpill').value;
+  $('ckTolL').textContent=CK.tol; $('ckSoftL').textContent=CK.soft; $('ckSpillL').textContent=CK.spill+'%';
+  $('ckSw').style.background=CK.auto?'repeating-linear-gradient(45deg,#ddd 0 6px,#bbb 6px 12px)':CK.color;
+  $('ckPickBtn').disabled = !!CK.auto;
+  invalidateCK(); savePrefs();
+  clearTimeout(CKT);
+  if(now) draw(); else CKT=setTimeout(draw,140);
+}
+/* eyedropper — photo pe click karke background ka colour uthao */
+function startPick(){
+  if(!cur()){ toast('Pehle koi photo select karo','err'); return; }
+  PICK=1; $('holder').classList.add('pick');
+  toast('Ab photo me background ke uss hisse pe click karo');
+}
+function doPick(bx,by){
+  PICK=0; $('holder').classList.remove('pick');
+  const rec=cur(); if(!rec) return;
+  const cv=document.createElement('canvas'); cv.width=PW; cv.height=PH;
+  const c=cv.getContext('2d',{willReadFrequently:true});
+  paint(c,PW,PH,rec,{raw:1});
+  let d;
+  try{ d=c.getImageData(Math.max(0,Math.min(PW-1,bx|0)),Math.max(0,Math.min(PH-1,by|0)),1,1).data; }
+  catch(e){ toast('Colour nahi mila','err'); return; }
+  const hex='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+  $('ckCol').value=hex; $('ckAuto').value='0';
+  if(!CK.on) setCK(1);
+  ckChange(1);
+  toast('Colour le liya: '+hex.toUpperCase(),'ok');
+}
+
+/* editor preview */
+let PW=0, PH=0;
+function draw(){
+  const [OW,OH]=outSize();
+  const maxW = 430, maxH = 440;
+  const k = Math.min(maxW/OW, maxH/OH, 3);
+  PW=Math.max(40,Math.round(OW*k)); PH=Math.max(40,Math.round(OH*k));
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const cv=$('cv'), ov=$('ovl');
+  [cv,ov].forEach(x=>{ x.width=PW*dpr; x.height=PH*dpr; x.style.width=PW+'px'; x.style.height=PH+'px'; });
+  ov.style.position='absolute'; ov.style.left='0'; ov.style.top='0';
+  $('holder').style.width=PW+'px'; $('holder').style.height=PH+'px';
+
+  const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0);
+  const rec = P[IDX];
+  paint(c,PW,PH,rec,false);
+
+  /* guide overlay */
+  const o=ov.getContext('2d'); o.setTransform(dpr,0,0,dpr,0,0);
+  o.clearRect(0,0,PW,PH);
+  if(rec){
+    o.save(); o.strokeStyle='rgba(255,255,255,.45)'; o.lineWidth=1; o.setLineDash([5,5]);
+    o.beginPath();
+    o.moveTo(PW/3,0); o.lineTo(PW/3,PH); o.moveTo(PW*2/3,0); o.lineTo(PW*2/3,PH);
+    o.moveTo(0,PH/3); o.lineTo(PW,PH/3); o.moveTo(0,PH*2/3); o.lineTo(PW,PH*2/3);
+    o.stroke(); o.restore();
+  } else {
+    o.save(); o.fillStyle='rgba(0,0,0,.35)'; o.fillRect(0,0,PW,PH);
+    o.fillStyle='#fff'; o.font='600 13px DM Sans, sans-serif'; o.textAlign='center';
+    o.fillText('Photo load karo', PW/2, PH/2);
+    o.restore();
+  }
+  syncControls();
+}
+function syncControls(){
+  const r=P[IDX];
+  $('posLbl').textContent=(P.length?IDX+1:0)+' / '+P.length;
+  $('edTitle').textContent = r? r.name : 'Photo fit karo';
+  const st = r? r.st : {zoom:1,rot:0};
+  $('zm').value=st.zoom; $('zmLbl').textContent=Math.round(st.zoom*100)+'%';
+  $('rt').value=st.rot;  $('rtLbl').textContent=(+st.rot).toFixed(0)+'°';
+  $('fBr').value=st.br==null?1:st.br;
+  $('fCt').value=st.ct==null?1:st.ct;
+  $('fSa').value=st.sa==null?1:st.sa;
+  $('sTot').textContent=P.length;
+  const d=P.filter(x=>x.done).length;
+  $('sDone').textContent=d; $('sLeft').textContent=P.length-d;
+  $('cnt').textContent=P.length;
+}
+
+/* ===================== TRANSFORM CONTROLS ===================== */
+function cur(){ return P[IDX]; }
+function touch(){ const r=cur(); if(r){ r.done=0; } }
+function setZoom(v,noTouch){ const r=cur(); if(!r) return;
+  r.st.zoom=Math.max(0.1,Math.min(10,v)); if(!noTouch) touch(); draw(); renderStrip(); }
+function nudgeZoom(d){ const r=cur(); if(!r) return; setZoom(r.st.zoom*(1+d)); }
+function setRot(v){ const r=cur(); if(!r) return; r.st.rot=v; touch(); draw(); renderStrip(); }
+function rotBy(d){ const r=cur(); if(!r) return; let v=r.st.rot+d;
+  while(v>180)v-=360; while(v<-180)v+=360; setRot(v); }
+function flipIt(){ const r=cur(); if(!r) return; r.st.flip=r.st.flip?0:1; touch(); draw(); renderStrip(); }
+function setFx(k,v){ const r=cur(); if(!r) return; r.st[k]=v; touch(); draw(); renderStrip(); }
+function resetFx(){ const r=cur(); if(!r) return; r.st.br=1; r.st.ct=1; r.st.sa=1;
+  touch(); draw(); syncControls(); }
+function centerIt(){ const r=cur(); if(!r) return; r.st.px=0; r.st.py=0; touch(); draw(); renderStrip(); }
+function resetIt(){ const r=cur(); if(!r) return; r.st=newState(); touch(); draw(); renderStrip(); }
+function fitMode(m){
+  const r=cur(); if(!r||!r.img.width) return;
+  const [W,H]=outSize();
+  const cover=Math.max(W/r.img.width,H/r.img.height);
+  const contain=Math.min(W/r.img.width,H/r.img.height);
+  r.st.px=0; r.st.py=0; r.st.rot=0;
+  r.st.zoom = m==='cover' ? 1 : contain/cover;
+  touch(); draw(); renderStrip();
+}
+function copyToRest(){
+  const r=cur(); if(!r) return;
+  if(!confirm('Isi zoom / position / rotation / look ko baaki SAARI photos pe laga dein?')) return;
+  P.forEach((x,i)=>{ if(i!==IDX){ x.st=Object.assign({},r.st); x.done=0; } });
+  draw(); renderStrip(); toast('Sab photos pe laga diya','ok');
+}
+function saveNext(){
+  const r=cur(); if(!r){ toast('Pehle photo load karo','err'); return; }
+  r.done=1;
+  renderStrip(); syncControls(); savePrefs();
+  const nxt = P.findIndex((x,i)=> i>IDX && !x.done);
+  if(nxt>=0){ IDX=nxt; draw(); renderStrip(); toast('Saved · agli photo'); }
+  else {
+    const any = P.findIndex(x=>!x.done);
+    if(any>=0){ IDX=any; draw(); renderStrip(); toast('Saved · baaki photo pe aa gaye'); }
+    else { draw(); toast('Sab photos set ho gayi — ab ZIP download kar lo 🎉','ok'); }
+  }
+}
+function go(d){
+  if(!P.length) return;
+  IDX=(IDX+d+P.length)%P.length; draw(); renderStrip(); scrollThumb();
+}
+function pick(i){ IDX=i; draw(); renderStrip(); }
+
+/* ===================== DRAG / WHEEL ===================== */
+(function(){
+  const h=$('holder');
+  const PT=new Map();          /* saare active fingers */
+  let dg=null, pn=null, moved=0;
+
+  const pts=()=>[...PT.values()];
+  const startPinch=()=>{
+    const r=cur(); if(!r) return;
+    const a=pts()[0], b=pts()[1];
+    pn={ d:Math.hypot(a.x-b.x,a.y-b.y),
+         ang:Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI,
+         mx:(a.x+b.x)/2, my:(a.y+b.y)/2,
+         zoom:r.st.zoom, rot:r.st.rot, px:r.st.px, py:r.st.py };
+    dg=null;
+  };
+  h.addEventListener('pointerdown',e=>{
+    const r=cur(); if(!r) return;
+    h.setPointerCapture(e.pointerId);
+    PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    moved=0;
+    if(PT.size===2) startPinch();
+    else if(PT.size===1){ h.classList.add('grab');
+      dg={x:e.clientX,y:e.clientY,px:r.st.px,py:r.st.py}; }
+  });
+  h.addEventListener('pointermove',e=>{
+    if(!PT.has(e.pointerId)) return;
+    const r=cur(); if(!r) return;
+    PT.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(PT.size>=2 && pn){
+      /* ---- do ungli: pinch zoom + rotate + pan ek saath ---- */
+      const a=pts()[0], b=pts()[1];
+      const d=Math.hypot(a.x-b.x,a.y-b.y);
+      const ang=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+      const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+      if(pn.d>4){
+        const k=d/pn.d;
+        const z1=Math.max(0.1,Math.min(10,pn.zoom*k));
+        /* dono ungliyon ke beech ka point jahan hai wahin rahe */
+        const rect=h.getBoundingClientRect();
+        const bx=pn.mx-rect.left, by=pn.my-rect.top;
+        const cx0=PW/2+pn.px*PW, cy0=PH/2+pn.py*PH;
+        const zr=z1/pn.zoom;
+        let nx=bx-(bx-cx0)*zr, ny=by-(by-cy0)*zr;
+        nx += (mx-pn.mx); ny += (my-pn.my);
+        r.st.zoom=z1; r.st.px=(nx-PW/2)/PW; r.st.py=(ny-PH/2)/PH;
+        let dr=ang-pn.ang;
+        while(dr>180)dr-=360; while(dr<-180)dr+=360;
+        if(Math.abs(dr)>1.5){
+          let v=pn.rot+dr; while(v>180)v-=360; while(v<-180)v+=360;
+          r.st.rot=v;
+        }
+      }
+      moved=1; touch(); draw(); syncControls();
+      return;
+    }
+    if(!dg) return;
+    if(Math.abs(e.clientX-dg.x)+Math.abs(e.clientY-dg.y)>3) moved=1;
+    r.st.px = dg.px + (e.clientX-dg.x)/PW;
+    r.st.py = dg.py + (e.clientY-dg.y)/PH;
+    touch(); draw();
+  });
+  const end=e=>{
+    if(PT.has(e.pointerId)){
+      if(PICK && !moved && PT.size===1){
+        const rect=h.getBoundingClientRect();
+        doPick(e.clientX-rect.left, e.clientY-rect.top);
+      }
+      PT.delete(e.pointerId);
+    }
+    if(PT.size<2) pn=null;
+    if(PT.size===1){ const r=cur(); const a=pts()[0];
+      if(r) dg={x:a.x,y:a.y,px:r.st.px,py:r.st.py}; }
+    if(PT.size===0){ dg=null; h.classList.remove('grab'); renderStrip(); }
+  };
+  h.addEventListener('pointerup',end); h.addEventListener('pointercancel',end);
+  h.addEventListener('gesturestart',e=>e.preventDefault());
+
+  h.addEventListener('wheel',e=>{
+    const r=cur(); if(!r) return;
+    e.preventDefault();
+    const rect=h.getBoundingClientRect();
+    const bx=e.clientX-rect.left, by=e.clientY-rect.top;
+    const z0=r.st.zoom, z1=Math.max(0.1,Math.min(10, z0 * (e.deltaY<0?1.09:1/1.09)));
+    /* cursor ke neeche wala point wahin rahe */
+    const cx0=PW/2+r.st.px*PW, cy0=PH/2+r.st.py*PH;
+    const nx=bx-(bx-cx0)*(z1/z0), ny=by-(by-cy0)*(z1/z0);
+    r.st.zoom=z1; r.st.px=(nx-PW/2)/PW; r.st.py=(ny-PH/2)/PH;
+    touch(); draw(); syncControls();
+  },{passive:false});
+})();
+
+document.addEventListener('keydown',e=>{
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return;
+  const r=cur(); if(!r) return;
+  const st=e.shiftKey?0.02:0.004;
+  let hit=1;
+  if(e.key==='ArrowLeft') r.st.px-=st;
+  else if(e.key==='ArrowRight') r.st.px+=st;
+  else if(e.key==='ArrowUp') r.st.py-=st;
+  else if(e.key==='ArrowDown') r.st.py+=st;
+  else if(e.key==='+'||e.key==='=') { nudgeZoom(0.08); return; }
+  else if(e.key==='-'||e.key==='_'){ nudgeZoom(-0.08); return; }
+  else if(e.key==='Enter'){ e.preventDefault(); saveNext(); return; }
+  else if(e.key==='PageDown'){ go(1); return; }
+  else if(e.key==='PageUp'){ go(-1); return; }
+  else hit=0;
+  if(hit){ e.preventDefault(); touch(); draw(); }
+});
+
+/* ===================== PHOTO LIST ===================== */
+function isImg(f){ return /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(f.name||'') && (f.name||'')[0]!=='.'; }
+function addFiles(files){
+  const arr=[...files].filter(isImg);
+  if(!arr.length){ toast('Koi image file nahi mili','err'); return; }
+  arr.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+  const have=new Set(P.map(x=>x.name));
+  let n=0, pend=0;
+  arr.forEach(f=>{
+    if(have.has(f.name)) return;
+    have.add(f.name);
+    const url=URL.createObjectURL(f);
+    const img=new Image();
+    const rec={ name:f.name, key:f.name.replace(/\.[^.]+$/,''), url, img, st:newState(), done:0 };
+    pend++;
+    img.onload=()=>{ if(--pend===0) afterLoad(); renderStrip(); if(P[IDX]===rec) draw(); };
+    img.onerror=()=>{ rec.bad=1; if(--pend===0) afterLoad(); };
+    img.src=url;
+    P.push(rec); n++;
+  });
+  if(IDX<0 && P.length) IDX=0;
+  $('loadStat').innerHTML='<b>'+P.length+'</b> photos loaded'+(n?' · '+n+' nayi':'');
+  renderStrip(); syncControls(); draw();
+  toast(n+' photos add hui','ok');
+  function afterLoad(){ renderStrip(); draw(); }
+}
+function renderStrip(){
+  const box=$('strip'), f=$('filt').value;
+  if(!P.length){ box.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="big">🖼</div>'+
+    '<div class="hint">Left se folder ya photos select karo</div></div>'; syncControls(); return; }
+  const rows=P.map((p,i)=>({p,i})).filter(({p})=> f==='all' || (f==='done'?p.done:!p.done));
+  box.innerHTML = rows.length? rows.map(({p,i})=>
+    '<div class="th'+(i===IDX?' on':'')+(p.done?' done':'')+'" data-i="'+i+'" onclick="pick('+i+')">'+
+      '<span class="num">'+(i+1)+'</span>'+
+      (p.done?'<span class="bg">✓</span>':'')+
+      '<img src="'+p.url+'" alt="">'+
+      '<span title="'+esc(p.name)+'">'+esc(p.key)+'</span>'+
+    '</div>').join('')
+    : '<div class="empty" style="grid-column:1/-1"><div class="hint">Is filter me kuch nahi.</div></div>';
+  syncControls();
+}
+function scrollThumb(){
+  const el=$('strip').querySelector('.th[data-i="'+IDX+'"]');
+  if(el && el.scrollIntoView) el.scrollIntoView({block:'nearest'});
+}
+function clearAll(){
+  if(!P.length) return;
+  if(!confirm('Saari photos aur unki settings hata dein?')) return;
+  P.forEach(p=>{ try{URL.revokeObjectURL(p.url)}catch(e){} });
+  P=[]; IDX=-1; $('loadStat').textContent='Abhi koi photo nahi.';
+  renderStrip(); draw(); toast('Sab hata diya');
+}
+
+/* folder drag-drop (subfolders bhi) */
+(function(){
+  const d=$('drop');
+  ['dragenter','dragover'].forEach(v=>d.addEventListener(v,e=>{e.preventDefault();d.classList.add('hv')}));
+  ['dragleave','drop'].forEach(v=>d.addEventListener(v,e=>{e.preventDefault();d.classList.remove('hv')}));
+  d.addEventListener('drop',async e=>{
+    e.preventDefault();
+    const items=[...(e.dataTransfer.items||[])];
+    const entries=items.map(it=>it.webkitGetAsEntry?it.webkitGetAsEntry():null).filter(Boolean);
+    const files=[...(e.dataTransfer.files||[])];
+    if(!entries.length){ if(files.length) addFiles(files); return; }
+    const out=[];
+    const walk=async en=>{
+      if(!en) return;
+      if(en.isFile){ await new Promise(r=>en.file(f=>{out.push(f);r()},()=>r())); }
+      else if(en.isDirectory){
+        const rd=en.createReader(); let b;
+        do{ b=await new Promise(r=>rd.readEntries(r,()=>r([]))); for(const c of b) await walk(c); }while(b.length);
+      }
+    };
+    toast('Folder padh rahe hain…');
+    for(const en of entries) await walk(en);
+    if(out.length) addFiles(out); else if(files.length) addFiles(files);
+    else toast('Folder me koi image nahi mili','err');
+  });
+})();
+
+/* ===================== EXPORT ===================== */
+function prog(p,t){ $('pw').style.display='block'; $('pb').style.width=p+'%'; $('pt').textContent=t;
+  if(p>=100) setTimeout(()=>$('pw').style.display='none',1300); }
+function dl(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
+function outName(rec,i){
+  const fmt=$('fmt').value==='png'?'png':'jpg';
+  const pat=$('namePat').value;
+  let base = pat==='num' ? 'photo_'+(i+1)
+           : pat==='orig_n' ? rec.key+'_'+(i+1)
+           : rec.key;
+  base=String(base).replace(/[^\w\-. ]/g,'_').trim()||('photo_'+(i+1));
+  return base+'.'+fmt;
+}
+function renderFull(rec){
+  const [W,H]=outSize();
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const c=cv.getContext('2d');
+  if($('fmt').value==='jpeg' && $('bgMode').value==='none'){ c.fillStyle='#FFFFFF'; c.fillRect(0,0,W,H); }
+  paint(c,W,H,rec,{full:1});
+  return cv;
+}
+async function exportOne(){
+  const r=cur(); if(!r){ toast('Koi photo select nahi','err'); return; }
+  const cv=renderFull(r);
+  const fmt=$('fmt').value;
+  cv.toBlob(b=>{ dl(b,outName(r,IDX)); toast('Download ho gayi','ok'); },
+    fmt==='png'?'image/png':'image/jpeg',0.94);
+}
+async function exportZip(){
+  if(!P.length){ toast('Pehle photos load karo','err'); return; }
+  const only=$('zipWhat').value==='done';
+  const list=P.map((p,i)=>({p,i})).filter(({p})=>!p.bad && (!only || p.done));
+  if(!list.length){ toast('Kuch bhi save nahi kiya abhi','err'); return; }
+  const zip=new JSZip(); const used={};
+  const fmt=$('fmt').value;
+  for(let k=0;k<list.length;k++){
+    const {p,i}=list[k];
+    prog(Math.round(k/list.length*100),'Banate ja rahe hain '+(k+1)+' / '+list.length+' — '+p.name);
+    const cv=renderFull(p);
+    const data=cv.toDataURL(fmt==='png'?'image/png':'image/jpeg',0.94).split(',')[1];
+    let nm=outName(p,i);
+    if(used[nm]){ const d=nm.lastIndexOf('.'); nm=nm.slice(0,d)+'_'+(++used[nm])+nm.slice(d); } else used[nm]=1;
+    zip.file(nm,data,{base64:true});
+    if(k%4===0) await new Promise(r=>setTimeout(r,0));
+  }
+  prog(99,'ZIP ready kar rahe hain…');
+  const blob=await zip.generateAsync({type:'blob'},m=>prog(Math.round(m.percent),'Compressing… '+Math.round(m.percent)+'%'));
+  dl(blob,'photos_'+list.length+'.zip');
+  prog(100,'Done'); toast(list.length+' photos ZIP me download ho gayi','ok');
+}
+
+/* ===================== SAVE / LOAD WORK ===================== */
+function boxConf(){
+  return { unit:unit(), w:+$('bw').value, h:+$('bh').value, dpi:+$('dpi').value, shape:BOX.shape,
+    rad:+$('rad').value, bdw:+$('bdw').value, bdc:$('bdc').value,
+    bgMode:$('bgMode').value, bgCol:$('bgCol').value, bgCol2:$('bgCol2').value,
+    fmt:$('fmt').value, namePat:$('namePat').value, ck:Object.assign({},CK) };
+}
+function applyBoxConf(b){
+  if(!b) return;
+  $('unit').value=b.unit||'mm'; $('bw').value=b.w; $('bh').value=b.h;
+  if(b.dpi) $('dpi').value=b.dpi;
+  BOX.shape=b.shape||'rounded'; $('rad').value=b.rad||0; $('bdw').value=b.bdw||0;
+  $('bdc').value=b.bdc||'#16222F'; $('bgMode').value=b.bgMode||'color';
+  $('bgCol').value=b.bgCol||'#FFFFFF'; if(b.bgCol2)$('bgCol2').value=b.bgCol2;
+  if(b.fmt)$('fmt').value=b.fmt;
+  if(b.namePat)$('namePat').value=b.namePat;
+  if(b.ck){
+    CK=Object.assign(CK,b.ck);
+    $('ckMode').value=CK.mode; $('ckAuto').value=String(CK.auto); $('ckCol').value=CK.color;
+    $('ckTol').value=CK.tol; $('ckSoft').value=CK.soft; $('ckSpill').value=CK.spill;
+    setCK(CK.on); ckChange(1);
+  }
+  $('preset').value='custom';
+  drawShapeBtns(); onBox();
+}
+function savePrefs(){ try{ localStorage.setItem('pbs_box',JSON.stringify(boxConf())); }catch(e){} }
+function loadPrefs(){
+  try{ const b=JSON.parse(localStorage.getItem('pbs_box')||'null'); if(b) applyBoxConf(b); }catch(e){}
+}
+function saveSession(){
+  const d={ v:1, box:boxConf(),
+    photos:P.map(p=>({name:p.name,key:p.key,st:p.st,done:p.done})) };
+  dl(new Blob([JSON.stringify(d)],{type:'application/json'}),'photo_box_work.json');
+  toast('Work save ho gaya — photos dobara folder se load karna','ok');
+}
+function loadSession(f){
+  if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      applyBoxConf(d.box);
+      const map={}; (d.photos||[]).forEach(x=>map[x.name]=x);
+      let hit=0;
+      P.forEach(p=>{ const m=map[p.name]; if(m){ p.st=m.st; p.done=m.done; hit++; } });
+      renderStrip(); draw();
+      toast(hit? (hit+' photos ki settings wapas lag gayi') : 'Box settings load ho gayi — ab photos load karo','ok');
+    }catch(err){ toast('File load nahi hui','err'); }
+  };
+  r.readAsText(f);
+}
+
+/* ===================== BOOT ===================== */
+drawShapeBtns();
+ckChange(1);
+loadPrefs();
+onBox();
+draw();
+renderStrip();
+window.addEventListener('resize',()=>draw());
+window.addEventListener('beforeunload',e=>{ if(P.length){ e.preventDefault(); e.returnValue=''; } });
+</script>
