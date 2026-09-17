@@ -422,12 +422,12 @@ table.coord tr.msel td{background:var(--blue-soft)}
             <button class="btn sm" onclick="addText('student')">Student field</button>
             <button class="btn sm" onclick="addText('school')">School field</button>
             <button class="btn sm" onclick="addText('static')">Fixed text</button>
-            <button class="btn sm" onclick="addText('pair')">Label + value</button>
+            <button class="btn sm" onclick="addPair()">Label + value</button>
           </div>
 
           <div class="grp">Images</div>
           <div class="grid2" style="gap:7px">
-            <button class="btn sm" onclick="addImg('school')">Logo / sign</button>
+            <button class="btn sm" onclick="openImgPrompt()">Logo / sign / other</button>
             <button class="btn sm" onclick="addImg('student')">Student photo</button>
           </div>
 
@@ -882,6 +882,46 @@ table.coord tr.msel td{background:var(--blue-soft)}
   </div>
 </div>
 
+<div class="ovl" id="pairOvl" onclick="if(event.target===this)closePairPrompt()">
+  <div class="modal" style="width:min(360px,100%)">
+    <div class="card-h"><span>Naya Label + Value</span><button class="btn sm" onclick="closePairPrompt()">Close</button></div>
+    <div class="card-b">
+      <div class="fld">
+        <label class="lb">Label ka naam</label>
+        <input class="in" id="pairLabelInput" placeholder="e.g. Roll No, Father, House"
+          onkeydown="if(event.key==='Enter')confirmAddPair()">
+      </div>
+      <div class="hint" style="margin-bottom:10px">Yahi naam label aur student-data column dono ke liye use hoga.</div>
+      <button class="btn amb full" onclick="confirmAddPair()">Add karein</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="imgOvl" onclick="if(event.target===this)closeImgPrompt()">
+  <div class="modal" style="width:min(400px,100%)">
+    <div class="card-h"><span>Naya image placeholder</span><button class="btn sm" onclick="closeImgPrompt()">Close</button></div>
+    <div class="card-b">
+      <div class="fld">
+        <label class="lb">Iska naam kya hai?</label>
+        <input class="in" id="imgNameInput" placeholder="e.g. Logo, Principal Sign, Seal, Watermark…"
+          onkeydown="if(event.key==='Enter')confirmAddImg()">
+        <div class="hint" style="margin-top:4px">Koi bhi naam de sakte ho — logo, sign, seal ya kuch bhi aur; zaroori nahi ki wahi ho.</div>
+      </div>
+      <div class="fld">
+        <label class="lb">Ye image kis tarah ki hai?</label>
+        <div class="seg" id="imgTypeSeg">
+          <button type="button" class="on" data-v="school" onclick="setImgType('school')">Static</button>
+          <button type="button" data-v="student" onclick="setImgType('student')">Dynamic</button>
+        </div>
+        <div class="hint" style="margin-top:6px" id="imgTypeHint">
+          <b>Static</b> — ek hi image school ki taraf se ek baar upload hogi, sab cards par same dikhegi (jaise Logo, Sign, Seal).
+        </div>
+      </div>
+      <button class="btn amb full" onclick="confirmAddImg()">Add karein</button>
+    </div>
+  </div>
+</div>
+
 <input type="file" id="rowPhoto" accept="image/*" hidden>
 <div id="offscreen"></div>
 <div class="toast" id="toast"></div>
@@ -1095,10 +1135,11 @@ function schoolImageFields(){
 }
 
 const SAMPLE = {
-  'Name':'Aarav Sharma','Student Name':'Aarav Sharma','Father Name':'Rajesh Sharma',
+  'Name':'Amar Bhardwaj','Student Name':'Amar Bhardwaj','Father Name':'Ramesh Chand',
   'Mother Name':'Sunita Sharma','Class':'10-A','Roll No':'A1024','Roll':'A1024',
   'DOB':'14/08/2010','Blood Group':'B+','Address':'12, Civil Lines, Jaunpur','Phone':'98765 43210',
-  'Mobile':'98765 43210','Session':'2025-26','Admission No':'2019/114','Village':'Jaunpur','ID':'A1024'
+  'Mobile':'98765 43210','Session':'2025-26','Admission No':'2019/114','Village':'Jaunpur','ID':'A1024',
+  'Section':'A'
 };
 function sampleFor(f){
   if(SAMPLE[f]) return SAMPLE[f];
@@ -1117,6 +1158,15 @@ function valueFor(el, stu, useSample){
   // student
   if(stu && stu.data && stu.data[el.field] != null && stu.data[el.field] !== '') return stu.data[el.field];
   return useSample ? sampleFor(el.field) : '';
+}
+
+/* Caps a *value* (never the label) at el.maxChars characters and appends
+   a literal "..." when it was cut. Used by text and pair value rendering
+   only — never touches QR/barcode data, which always gets the full value. */
+function truncateMax(v, maxChars){
+  const str = String(v == null ? '' : v);
+  if(!maxChars || maxChars <= 0 || str.length <= maxChars) return str;
+  return str.slice(0, maxChars).replace(/\s+$/, '') + '...';
 }
 
 /* ---------------- DRAW UTILITIES ---------------- */
@@ -1218,6 +1268,134 @@ function layoutText(ctx, el, raw, boxW, boxH, s){
   return {lines: hit.lines, size: hit.sizeMm * s, lh, padX: padXmm * s, padY: padYmm * s};
 }
 
+/* ---- Pair (label + value) layout: label and value keep independent fonts/
+   sizes/colours but shrink together, at their own ratio, to fit the box. ---- */
+const pairLayoutCache = new Map();
+function layoutPair(ctx, el, labelTxt, valTxt, boxWmm, boxHmm){
+  const padXmm = el.padX || 0, padYmm = el.padY || 0;
+  const lh = el.lh || 1.2;
+  const labelFont = el.labelFont || el.font;
+  const labelWeight = el.labelWeight || el.weight;
+  const labelItalic = el.labelItalic != null ? el.labelItalic : el.italic;
+  const labelSize0 = el.labelSize != null ? el.labelSize : el.size;
+
+  const key = [labelTxt, valTxt, labelFont, labelWeight, labelItalic ? 1 : 0, labelSize0,
+               el.font, el.weight, el.italic ? 1 : 0, el.size, el.ls || 0, lh, el.fit,
+               round(boxWmm, 2), round(boxHmm, 2), padXmm, padYmm].join('|');
+
+  let hit = pairLayoutCache.get(key);
+  if(!hit){
+    const innerW = Math.max(1, (boxWmm - padXmm*2) * CANON);
+    const innerH = Math.max(1, (boxHmm - padYmm*2) * CANON);
+    const minSize = 0.6 * CANON;
+    let valPx = Math.max(1, (el.size || 3) * CANON);
+    let labelPx = Math.max(1, (labelSize0 || el.size || 3) * CANON);
+    const ratio = labelPx / valPx;
+    setLS(ctx, (el.ls || 0) * CANON);
+    for(let guard = 0; guard < 200; guard++){
+      ctx.font = fontStr({font:labelFont, weight:labelWeight, italic:labelItalic}, labelPx);
+      const lw = labelTxt ? ctx.measureText(labelTxt).width : 0;
+      ctx.font = fontStr(el, valPx);
+      const vw = valTxt ? ctx.measureText(valTxt).width : 0;
+      const totalW = lw + vw;
+      const totalH = Math.max(labelPx, valPx) * lh;
+      const overflow = (totalW > innerW + 0.05) || (totalH > innerH + 0.05);
+      if(!overflow || el.fit !== 'shrink' || Math.min(labelPx, valPx) <= minSize) break;
+      valPx *= 0.975; labelPx = valPx * ratio;
+    }
+    hit = {labelSizeMm: labelPx / CANON, valSizeMm: valPx / CANON};
+    if(pairLayoutCache.size > 3000) pairLayoutCache.clear();
+    pairLayoutCache.set(key, hit);
+  }
+  return hit;
+}
+
+/* Draws a pair element as two runs (label style, value style) on one line,
+   back to back, sharing a baseline. Used whenever a pair isn't wrapping
+   (the normal case for every "Label + value" element in this app). */
+function drawPair(ctx, el, stu, useSample, x, y, w, h, s){
+  const v = truncateMax(valueFor(el, stu, useSample), el.maxChars);
+  const sep = el.sepText == null ? ': ' : el.sepText;
+  const labelTxt = applyCaps((el.label || '') + sep, el.caps);
+  const valTxt = applyCaps((el.prefix || '') + v + (el.suffix || ''), el.caps);
+  if(labelTxt === '' && valTxt === '') return;
+
+  const boxWmm = w / s, boxHmm = h / s;
+  const padX = (el.padX || 0) * s, padY = (el.padY || 0) * s;
+  const Lp = layoutPair(ctx, el, labelTxt, valTxt, boxWmm, boxHmm);
+  const labelSize = Lp.labelSizeMm * s, valSize = Lp.valSizeMm * s;
+  const lh = el.lh || 1.2;
+
+  const labelFont = el.labelFont || el.font;
+  const labelWeight = el.labelWeight || el.weight;
+  const labelItalic = el.labelItalic != null ? el.labelItalic : el.italic;
+  const labelColor = el.labelColor || el.color || '#16222F';
+  const valColor = el.color || '#16222F';
+
+  ctx.save();
+  rrPath(ctx, x, y, w, h, (el.radius || 0) * s); ctx.clip();
+  ctx.textBaseline = 'alphabetic';
+  setLS(ctx, (el.ls || 0) * s);
+
+  ctx.font = fontStr({font:labelFont, weight:labelWeight, italic:labelItalic}, labelSize);
+  const labelW = labelTxt ? ctx.measureText(labelTxt).width : 0;
+  ctx.font = fontStr(el, valSize);
+  const valW = valTxt ? ctx.measureText(valTxt).width : 0;
+
+  // If a fixed label column is set, the value always starts at that column
+  // (not right after the label's own width) — this is what makes values on
+  // several stacked pairs (Father's Name / Mobile No / …) line up as a table,
+  // even though the labels themselves are different lengths.
+  const colW = (el.labelColW || 0) * s;
+  const labelSpan = colW > 0 ? Math.max(colW, labelW) : labelW;
+
+  const baseSize = Math.max(labelSize, valSize);
+  const blockH = baseSize * lh;
+  let startY;
+  if(el.valign === 'top') startY = y + padY;
+  else if(el.valign === 'bottom') startY = y + h - padY - blockH;
+  else startY = y + (h - blockH)/2;
+
+  const totalW = labelSpan + valW;
+  let startX;
+  if(el.align === 'center') startX = x + (w - totalW)/2;
+  else if(el.align === 'right') startX = x + w - padX - totalW;
+  else startX = x + padX;
+
+  const ly = startY + baseSize*0.80;
+
+  if(el.shadow){
+    ctx.shadowColor = 'rgba(0,0,0,.42)';
+    ctx.shadowBlur = Math.max(1, 0.35*s);
+    ctx.shadowOffsetY = Math.max(0.5, 0.2*s);
+  }
+
+  let cx = startX;
+  if(labelTxt){
+    ctx.font = fontStr({font:labelFont, weight:labelWeight, italic:labelItalic}, labelSize);
+    if(el.strokeW > 0 && el.strokeC){ ctx.lineWidth = el.strokeW*s; ctx.strokeStyle = el.strokeC; ctx.lineJoin = 'round'; ctx.strokeText(labelTxt, cx, ly); }
+    ctx.fillStyle = labelColor;
+    ctx.fillText(labelTxt, cx, ly);
+  }
+  cx = startX + labelSpan;
+  if(valTxt){
+    ctx.font = fontStr(el, valSize);
+    if(el.strokeW > 0 && el.strokeC){ ctx.lineWidth = el.strokeW*s; ctx.strokeStyle = el.strokeC; ctx.lineJoin = 'round'; ctx.strokeText(valTxt, cx, ly); }
+    ctx.fillStyle = valColor;
+    ctx.fillText(valTxt, cx, ly);
+  }
+  ctx.restore();
+
+  if(el.underline){
+    ctx.save();
+    ctx.strokeStyle = valColor;
+    ctx.lineWidth = Math.max(0.5, baseSize*0.06);
+    const uy = startY + baseSize*0.94;
+    ctx.beginPath(); ctx.moveTo(startX, uy); ctx.lineTo(startX + totalW, uy); ctx.stroke();
+    ctx.restore();
+  }
+}
+
 /* ---------------- ELEMENT DRAW ---------------- */
 function drawElement(ctx, el, stu, s, useSample, W, H){
   if(el.hidden) return;
@@ -1313,17 +1491,25 @@ function drawElement(ctx, el, stu, s, useSample, W, H){
   }
 
   /* ---- text & pair ---- */
-  let raw;
-  if(el.kind === 'pair'){
-    const v = valueFor(el, stu, useSample);
-    raw = (el.label || '') + (el.sepText == null ? ': ' : el.sepText) + (el.prefix||'') + v + (el.suffix||'');
-  } else {
-    raw = (el.prefix || '') + valueFor(el, stu, useSample) + (el.suffix || '');
-  }
   if(el.boxFill || (el.borderW > 0 && el.borderC)){
     rrPath(ctx, x, y, w, h, (el.radius || 0) * s);
     if(el.boxFill){ ctx.fillStyle = el.boxFill; ctx.fill(); }
     if(el.borderW > 0 && el.borderC){ ctx.lineWidth = el.borderW * s; ctx.strokeStyle = el.borderC; ctx.stroke(); }
+  }
+
+  if(el.kind === 'pair' && el.wrap !== true){
+    drawPair(ctx, el, stu, useSample, x, y, w, h, s);
+    ctx.restore();
+    return;
+  }
+
+  let raw;
+  if(el.kind === 'pair'){
+    const v = truncateMax(valueFor(el, stu, useSample), el.maxChars);
+    raw = (el.label || '') + (el.sepText == null ? ': ' : el.sepText) + (el.prefix||'') + v + (el.suffix||'');
+  } else {
+    const v = truncateMax(valueFor(el, stu, useSample), el.maxChars);
+    raw = (el.prefix || '') + v + (el.suffix || '');
   }
   if(raw === '' ) { ctx.restore(); return; }
 
@@ -1526,13 +1712,10 @@ function addText(src){
   const fields = src === 'student' ? ['Name','Class','Roll No','Father Name','DOB'] : ['School Name','Address','Phone'];
   const used = src === 'student' ? studentFields() : schoolTextFields();
   const field = fields.find(f => !used.includes(f)) || (src === 'student' ? 'Field ' + (used.length+1) : 'School ' + (used.length+1));
-  const isPair = src === 'pair';
-  const e = baseEl(isPair ? 'pair' : 'text', {
-    src: isPair ? 'student' : src,
-    field: (src === 'static') ? '' : (isPair ? 'Class' : field),
+  const e = baseEl('text', {
+    src: src,
+    field: (src === 'static') ? '' : field,
     text: src === 'static' ? 'Fixed text' : '',
-    label: isPair ? 'Class' : '',
-    sepText: ': ',
     x:8, y:nextFreeY(), w:84, h:7,
     font:'Poppins', size:3.2, weight:600, italic:false, color:'#16222F',
     align: 'left', valign:'middle', ls:0, lh:1.2, caps:'none',
@@ -1540,7 +1723,54 @@ function addText(src){
     boxFill:'', borderW:0, borderC:'#16222F', shadow:false, underline:false, strokeW:0, strokeC:'#ffffff',
     prefix:'', suffix:''
   });
-  e.name = isPair ? 'Pair · ' + e.label : (src === 'static' ? 'Text · Fixed' : (src === 'student' ? 'Student · ' : 'School · ') + e.field);
+  e.name = src === 'static' ? 'Text · Fixed' : (src === 'student' ? 'Student · ' : 'School · ') + e.field;
+  pushEl(e);
+}
+
+/* ---- Label + value (pair) : always ask for the label name before adding ---- */
+function addPair(){
+  const inp = $('pairLabelInput');
+  inp.value = '';
+  $('pairOvl').classList.add('on');
+  setTimeout(() => inp.focus(), 30);
+}
+function closePairPrompt(){
+  $('pairOvl').classList.remove('on');
+}
+function confirmAddPair(){
+  const name = $('pairLabelInput').value.trim();
+  if(!name){ toast('Pehle label ka naam likho', 'err'); $('pairLabelInput').focus(); return; }
+  closePairPrompt();
+
+  // Match the size/font/colour of whatever pair style is already on this side
+  // (or already used on the other side), so a newly added field never looks
+  // mismatched. Falls back to the studio's own default pair look only when
+  // there is no existing pair anywhere yet.
+  const ref = els().find(x => x.kind === 'pair') ||
+              S.sides[S.side === 'front' ? 'back' : 'front'].els.find(x => x.kind === 'pair');
+  const styleDefaults = {
+    font:'Inter', weight:500, italic:false, color:'#2B3A4A', size:2.5,
+    align:'left', valign:'middle', ls:0, lh:1.15, caps:'none',
+    wrap:false, fit:'shrink', maxLines:1, padX:0, padY:0,
+    labelFont:'Inter', labelWeight:500, labelSize:2.5, labelColor:'#2B3A4A', labelColW:0,
+    underline:false, shadow:false, strokeW:0, strokeC:'#ffffff'
+  };
+  const style = ref ? {
+    font:ref.font, weight:ref.weight, italic:ref.italic, color:ref.color, size:ref.size,
+    align:ref.align, valign:ref.valign, ls:ref.ls, lh:ref.lh, caps:ref.caps,
+    wrap:ref.wrap, fit:ref.fit, maxLines:ref.maxLines, padX:ref.padX, padY:ref.padY,
+    labelFont: ref.labelFont || ref.font, labelWeight: ref.labelWeight || ref.weight,
+    labelSize: ref.labelSize != null ? ref.labelSize : ref.size,
+    labelColor: ref.labelColor || ref.color, labelColW: ref.labelColW || 0,
+    underline:ref.underline, shadow:ref.shadow, strokeW:ref.strokeW, strokeC:ref.strokeC
+  } : styleDefaults;
+
+  const e = baseEl('pair', Object.assign({
+    src:'student', field:name, label:name, sepText:': ',
+    x:8, y:nextFreeY(), w:84, h:7, radius:0,
+    boxFill:'', borderW:0, borderC:'#16222F', prefix:'', suffix:''
+  }, style));
+  e.name = 'Pair · ' + e.label;
   pushEl(e);
 }
 
@@ -1555,6 +1785,51 @@ function addImg(src){
   });
   e.name = (src === 'student' ? 'Photo · ' : 'Logo · ') + field;
   pushEl(e);
+}
+
+/* ---- Any image placeholder (logo / sign / seal / kuch bhi) : always ask naam + static/dynamic ---- */
+let imgPromptType = 'school';
+function openImgPrompt(){
+  imgPromptType = 'school';
+  document.querySelectorAll('#imgTypeSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === 'school'));
+  updateImgTypeHint();
+  const used = schoolImageFields();
+  const suggestion = ['Logo', 'Principal Sign', 'Seal'].find(f => !used.includes(f)) || '';
+  const inp = $('imgNameInput');
+  inp.value = suggestion;
+  $('imgOvl').classList.add('on');
+  setTimeout(() => { inp.focus(); inp.select(); }, 30);
+}
+function closeImgPrompt(){
+  $('imgOvl').classList.remove('on');
+}
+function setImgType(v){
+  imgPromptType = v;
+  document.querySelectorAll('#imgTypeSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  updateImgTypeHint();
+}
+function updateImgTypeHint(){
+  $('imgTypeHint').innerHTML = imgPromptType === 'school'
+    ? '<b>Static</b> — ye image school ki taraf se sirf ek baar upload hogi (School tab me) aur sabhi students ke card par bilkul same dikhegi. Logo, Principal Sign, Seal, watermark jaisi cheezon ke liye sahi hai.'
+    : '<b>Dynamic</b> — student ke data ke saath badalti hai. Note: filhaal studio me har student ke liye sirf ek hi dynamic photo-slot hai (wahi "Student photo" jo tab 3 me upload/match karte ho) — is naam se bhi wahi photo yahan dikhegi, alag-alag photo nahi.';
+}
+function confirmAddImg(){
+  const name = $('imgNameInput').value.trim();
+  if(!name){ toast('Pehle image ka naam likho', 'err'); $('imgNameInput').focus(); return; }
+  const src = imgPromptType;
+  if(src === 'school' && schoolImageFields().includes(name)){
+    if(!confirm(`"${name}" naam ka static image field pehle se hai — usi naam se ek aur placeholder add karna hai?`)) return;
+  }
+  closeImgPrompt();
+  const e = baseEl('image', {
+    src, field: name,
+    x: src === 'student' ? 30 : 6, y: src === 'student' ? 14 : 4,
+    w: src === 'student' ? 40 : 16, h: src === 'student' ? 26 : 10,
+    fit:'cover', shape:'rect', radius:1, borderW:0.4, borderC:'#ffffff', boxFill:''
+  });
+  e.name = (src === 'student' ? 'Photo · ' : 'Image · ') + name;
+  pushEl(e);
+  toast(name + ' placeholder add ho gaya', 'ok');
 }
 
 function addShape(shape){
@@ -1628,6 +1903,7 @@ async function drawStage(){
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const W = S.card.w * s, H = S.card.h * s;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  cv.style.borderRadius = ((S.card.r || 0) * s) + 'px';
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1996,8 +2272,22 @@ function renderProps(){
       h += fldText('Separator', 'sepText', e.sepText == null ? ': ' : e.sepText);
     }
     h += `<div class="grid2">${fldText('Prefix', 'prefix', e.prefix)}${fldText('Suffix', 'suffix', e.suffix)}</div>`;
+    h += fldNum('Max characters (0 = no limit, adds "..." )', 'maxChars', e.maxChars || 0, 1, 0);
 
-    h += `<div class="grp">Type</div>`;
+    if(e.kind === 'pair'){
+      h += `<div class="grp">Label style</div>`;
+      h += `<div class="hint" style="margin:-4px 0 8px">Sirf label ("${esc(e.label||'')}") ka font/size/colour — value ki style neeche alag hai.</div>`;
+      h += fldSel('Label font', 'labelFont', e.labelFont || e.font, FONTS);
+      h += `<div class="grid2">
+        ${fldNum('Label size (mm)', 'labelSize', e.labelSize != null ? e.labelSize : e.size, 0.1, 0.5)}
+        ${fldSel('Label weight', 'labelWeight', e.labelWeight || e.weight, [[300,'Light'],[400,'Regular'],[500,'Medium'],[600,'Semibold'],[700,'Bold'],[800,'Extra bold'],[900,'Black']])}
+      </div>`;
+      h += fldColor('Label colour', 'labelColor', e.labelColor || e.color);
+      h += fldNum('Label column width (mm, 0 = auto)', 'labelColW', e.labelColW || 0, 0.5, 0);
+      h += `<div class="hint" style="margin:-4px 0 8px">Isse zyada ka set karo taaki niche wale sab pairs ki value ek hi jagah se shuru ho (jaise table).</div>`;
+    }
+
+    h += `<div class="grp">${e.kind === 'pair' ? 'Value style' : 'Type'}</div>`;
     h += fldSel('Font', 'font', e.font, FONTS);
     h += `<div class="grid2">
       ${fldNum('Size (mm)', 'size', e.size, 0.1, 0.5)}
@@ -2022,6 +2312,8 @@ function renderProps(){
       ${fldChk('Underline', 'underline', e.underline)}
       ${fldChk('Shadow', 'shadow', e.shadow)}
     </div>`;
+    if(e.kind === 'pair' && e.wrap === true)
+      h += `<div class="hint" style="margin-top:6px">Wrap lines ON hone par label aur value ek hi style me dikhenge (upar ki "Label style" tab tab hi kaam karti hai jab wrap OFF ho).</div>`;
 
     h += `<div class="grp">Box</div>`;
     h += `<div class="fld"><label class="lb">Fill (blank = transparent)</label>
@@ -2353,25 +2645,23 @@ function starterTemplate(){
   const L = S.sides.front.els;
   const mk = (o) => { const e = baseEl(o.kind, o); L.push(e); return e; };
 
-  mk({kind:'shape', shape:'rect', x:0, y:0, w:100, h:22, fill:'#16222F', radius:0, strokeW:0, name:'Header band'});
-  mk({kind:'shape', shape:'rect', x:0, y:20.5, w:100, h:1.2, fill:'#E8912B', radius:0, strokeW:0, name:'Accent line'});
   mk({kind:'image', src:'school', field:'Logo', x:6, y:3, w:14, h:9.2, fit:'contain', shape:'rect', radius:0, borderW:0, borderC:'#fff', boxFill:'', name:'Logo · Logo'});
   mk({kind:'text', src:'school', field:'School Name', x:22, y:3.2, w:72, h:7.5, font:'Poppins', size:3.5, weight:700,
-      color:'#FFFFFF', align:'left', valign:'middle', ls:0, lh:1.1, caps:'upper', wrap:true, fit:'shrink', maxLines:2,
+      color:'#16222F', align:'left', valign:'middle', ls:0, lh:1.1, caps:'upper', wrap:true, fit:'shrink', maxLines:2,
       padX:0.2, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', name:'School · School Name'});
   mk({kind:'text', src:'school', field:'Address', x:22, y:10.6, w:72, h:4.4, font:'Inter', size:2, weight:400,
-      color:'#D8E0E8', align:'left', valign:'middle', ls:0, lh:1.15, caps:'none', wrap:true, fit:'shrink', maxLines:2,
+      color:'#5C6B7A', align:'left', valign:'middle', ls:0, lh:1.15, caps:'none', wrap:true, fit:'shrink', maxLines:2,
       padX:0.2, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', name:'School · Address'});
   mk({kind:'text', src:'school', field:'Session', x:22, y:15.2, w:72, h:4, font:'Inter', size:2, weight:600,
       color:'#E8912B', align:'left', valign:'middle', ls:0.05, lh:1.15, caps:'upper', wrap:false, fit:'shrink',
       padX:0.2, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'Session ', suffix:'', name:'School · Session'});
 
   mk({kind:'image', src:'student', field:'Photo', x:31, y:25, w:38, h:29, fit:'cover', shape:'rounded', radius:2,
-      borderW:0.6, borderC:'#E8912B', boxFill:'#EEF1F5', name:'Photo · Photo'});
+      borderW:0, borderC:'#E8912B', boxFill:'#EEF1F5', name:'Photo · Photo'});
 
   mk({kind:'text', src:'student', field:'Name', x:5, y:56, w:90, h:6.4, font:'Poppins', size:3.6, weight:700,
       color:'#16222F', align:'center', valign:'middle', ls:0, lh:1.1, caps:'title', wrap:false, fit:'shrink',
-      padX:0.5, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', name:'Student · Name'});
+      padX:0.5, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', maxChars:22, name:'Student · Name'});
 
   const g = 'g' + (UID++);
   mk({kind:'shape', shape:'rect', x:30, y:62.6, w:40, h:5.4, fill:'#0E7C6B', radius:2.4, strokeW:0, stroke:'#000', group:g, name:'Badge bg'});
@@ -2379,30 +2669,37 @@ function starterTemplate(){
       color:'#FFFFFF', align:'center', valign:'middle', ls:0.05, lh:1.1, caps:'upper', wrap:false, fit:'shrink',
       padX:1, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'Class ', suffix:'', group:g, name:'Badge text'});
 
-  mk({kind:'pair', src:'student', field:'Roll No', label:'Roll No', sepText:': ', x:6, y:69.4, w:88, h:4.6,
+  mk({kind:'pair', src:'student', field:'Roll No', label:'Roll No', sepText:': ', x:6, y:69.4, w:44, h:4.6,
       font:'Inter', size:2.5, weight:500, color:'#2B3A4A', align:'left', valign:'middle', ls:0, lh:1.15,
       caps:'none', wrap:false, fit:'shrink', padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000',
       prefix:'', suffix:'', name:'Pair · Roll No'});
-  mk({kind:'pair', src:'student', field:'Father Name', label:'Father', sepText:': ', x:6, y:73.6, w:88, h:4.6,
+  mk({kind:'pair', src:'student', field:'Section', label:'Sec', sepText:': ', x:52, y:69.4, w:42, h:4.6,
       font:'Inter', size:2.5, weight:500, color:'#2B3A4A', align:'left', valign:'middle', ls:0, lh:1.15,
       caps:'none', wrap:false, fit:'shrink', padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000',
-      prefix:'', suffix:'', name:'Pair · Father Name'});
-  mk({kind:'pair', src:'student', field:'DOB', label:'D.O.B', sepText:': ', x:6, y:77.8, w:52, h:4.6,
+      prefix:'', suffix:'', name:'Pair · Section'});
+  mk({kind:'pair', src:'student', field:'Father Name', label:"Father", sepText:': ', x:6, y:73.6, w:88, h:4.6,
       font:'Inter', size:2.5, weight:500, color:'#2B3A4A', align:'left', valign:'middle', ls:0, lh:1.15,
       caps:'none', wrap:false, fit:'shrink', padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000',
-      prefix:'', suffix:'', name:'Pair · DOB'});
-  mk({kind:'pair', src:'student', field:'Blood Group', label:'Blood', sepText:': ', x:58, y:77.8, w:36, h:4.6,
-      font:'Inter', size:2.5, weight:600, color:'#C23B2E', align:'left', valign:'middle', ls:0, lh:1.15,
+      prefix:'', suffix:'', maxChars:26, labelColW:0, name:"Pair · Father"});
+  mk({kind:'pair', src:'student', field:'Mobile', label:'Mobile', sepText:': ', x:6, y:77.8, w:88, h:4.6,
+      font:'Inter', size:2.5, weight:500, color:'#2B3A4A', align:'left', valign:'middle', ls:0, lh:1.15,
       caps:'none', wrap:false, fit:'shrink', padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000',
-      prefix:'', suffix:'', name:'Pair · Blood Group'});
+      prefix:'', suffix:'', labelColW:0, name:'Pair · Mobile'});
+  mk({kind:'pair', src:'student', field:'Address', label:'Address', sepText:': ', x:6, y:82.0, w:52, h:9.4,
+      font:'Inter', size:2.5, weight:500, color:'#2B3A4A', align:'left', valign:'top', ls:0, lh:1.2,
+      caps:'none', wrap:true, fit:'shrink', maxLines:2, padX:0, padY:0.2, radius:0, boxFill:'', borderW:0, borderC:'#000',
+      prefix:'', suffix:'', maxChars:70, name:'Pair · Address'});
 
-  mk({kind:'shape', shape:'rect', x:0, y:93.2, w:100, h:6.8, fill:'#EEF1F5', radius:0, strokeW:0, name:'Footer band'});
+  mk({kind:'image', src:'school', field:'Principal Sign', x:62, y:80.5, w:30, h:9.5, fit:'contain', shape:'rect',
+      radius:0, borderW:0, borderC:'#fff', boxFill:'', name:'Image · Principal Sign'});
+  mk({kind:'shape', shape:'line', x:62, y:90.6, w:30, h:0.35, fill:'#16222F', name:'Sign line'});
+  mk({kind:'text', src:'static', text:'Principal', x:62, y:91.0, w:30, h:5, font:'Inter', size:2.1, weight:600,
+      color:'#5C6B7A', align:'center', valign:'top', ls:0, lh:1.1, caps:'none', wrap:false, fit:'shrink',
+      padX:0.5, padY:0.3, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', name:'Text · Fixed'});
+
   mk({kind:'text', src:'school', field:'Phone', x:4, y:93.6, w:52, h:6, font:'Inter', size:2.1, weight:500,
       color:'#5C6B7A', align:'left', valign:'middle', ls:0, lh:1.1, caps:'none', wrap:false, fit:'shrink',
       padX:0, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'☎ ', suffix:'', name:'School · Phone'});
-  mk({kind:'text', src:'static', text:'Principal', x:58, y:93.6, w:38, h:6, font:'Inter', size:2.1, weight:600,
-      color:'#5C6B7A', align:'right', valign:'middle', ls:0, lh:1.1, caps:'none', wrap:false, fit:'shrink',
-      padX:0.5, padY:0, radius:0, boxFill:'', borderW:0, borderC:'#000', prefix:'', suffix:'', name:'Text · Fixed'});
 
   sel = [];
   snapshot(); refreshAll(); fitZoom();
@@ -2511,6 +2808,7 @@ async function schoolPreview(){
   cv.height = Math.round(S.card.h * s * 2);
   cv.style.width = Math.round(S.card.w * s) + 'px';
   cv.style.height = 'auto';
+  cv.style.borderRadius = ((S.card.r || 0) * s) + 'px';
   const ctx = cv.getContext('2d');
   ctx.setTransform(2, 0, 0, 2, 0, 0);
   paintCard(ctx, k, null, s, {sample:true});
@@ -2686,7 +2984,10 @@ function buildPhotoKeys(){
   selEl.innerHTML = f.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
   if(f.includes(cur)) selEl.value = cur;
   else {
-    const pref = f.find(x => /roll|adm|id|code/i.test(x)) || f[0];
+    /* a column literally meant for the photo filename (e.g. "Photo Name",
+       "Image", "Pic") is the strongest signal — prefer it over roll/ID. */
+    const pref = f.find(x => /photo|image|pic/i.test(x)) ||
+                 f.find(x => /roll|adm|id|code/i.test(x)) || f[0];
     if(pref) selEl.value = pref;
   }
 }
@@ -2943,6 +3244,7 @@ async function renderPreview(){
     cell.className = 'prev-cell' + (isIncomplete(stu) ? ' warn' : '');
     const cv = await renderCardCanvas(sideKey, stu, s, false);
     cv.style.width = Math.round(S.card.w * s) + 'px';
+    cv.style.borderRadius = ((S.card.r || 0) * s) + 'px';
     cell.appendChild(cv);
     const nm = document.createElement('div');
     nm.className = 'nm';
