@@ -311,9 +311,118 @@ table.coord tr.msel td{background:var(--blue-soft)}
 .swatch-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
 .sw{width:19px;height:19px;border-radius:4px;border:1px solid var(--line-2);cursor:pointer;padding:0}
 .sw:hover{transform:scale(1.14)}
+/* ===== TEMPLATE GALLERY ===== */
+.tpl-gate{
+  position:fixed; inset:0; z-index:500; background:var(--paper);
+  overflow:auto; display:none;
+}
+.tpl-gate.on{display:block}
+.tpl-gate-top{
+  background:var(--ink); color:#fff; padding:26px 28px; position:sticky; top:0; z-index:2;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.tpl-gate-top .mk{
+  width:30px;height:30px;border-radius:7px;background:var(--amber);
+  display:inline-grid;place-items:center;color:var(--ink);font-size:13px;font-weight:800;
+  vertical-align:middle; margin-right:10px;
+}
+.tpl-gate-top h1{font-size:22px;font-weight:800;display:inline;vertical-align:middle}
+.tpl-gate-top p{color:rgba(255,255,255,.65);font-size:13px;margin-top:6px}
+.tpl-wrap{max-width:1080px;margin:0 auto;padding:28px 24px 60px}
+
+.tpl-sec{margin-top:30px}
+.tpl-sec-h{font-size:13px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.tpl-sec-h .ln{flex:1;height:1px;background:var(--line)}
+
+.tpl-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:16px}
+.tpl-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden;
+  display:flex; flex-direction:column; transition:box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+}
+.tpl-card:hover{box-shadow:0 14px 28px rgba(22,34,47,.12); transform:translateY(-3px); border-color:var(--amber)}
+.tpl-thumb{
+  position:relative; aspect-ratio:3/4; background:var(--panel-2);
+  display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:zoom-in;
+}
+.tpl-thumb img{width:100%;height:100%;object-fit:contain}
+.tpl-thumb .zoom-ic{
+  position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:7px;
+  background:rgba(22,34,47,.65); color:#fff; display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .2s ease;
+}
+.tpl-card:hover .zoom-ic{opacity:1}
+.tpl-info{padding:12px 13px 13px; display:flex; flex-direction:column; gap:8px; flex:1}
+.tpl-info .nm{font-size:13.5px; font-weight:700}
+.tpl-info .sz{font-size:11.5px; color:var(--ink-3)}
+.tpl-use{
+  margin-top:auto; background:var(--ink); color:#fff; border:none; border-radius:6px;
+  padding:8px; font-size:12.5px; font-weight:600; text-align:center;
+}
+.tpl-use:hover{background:var(--amber); color:var(--ink)}
+
+.tpl-blank{
+  border:2px dashed var(--line-2); border-radius:10px; background:var(--panel);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  padding:34px 18px; cursor:pointer; transition:border-color .2s ease, background .2s ease;
+  aspect-ratio:3/4;
+}
+.tpl-blank:hover{border-color:var(--amber); background:var(--amber-soft)}
+.tpl-blank .plus{
+  width:46px;height:46px;border-radius:50%;background:var(--panel-2);
+  display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--ink-3);
+}
+.tpl-blank:hover .plus{background:var(--amber);color:#fff}
+.tpl-blank b{font-size:13.5px}
+.tpl-blank span{font-size:11.5px;color:var(--ink-3);text-align:center}
+
+.tpl-empty{padding:30px; text-align:center; color:var(--ink-3); font-size:13px}
+
+.zoom-ovl{
+  position:fixed; inset:0; background:rgba(15,22,30,.82); z-index:600;
+  display:none; align-items:center; justify-content:center; padding:30px;
+}
+.zoom-ovl.on{display:flex}
+.zoom-box{max-width:min(520px,92vw); max-height:88vh; display:flex; flex-direction:column; align-items:center; gap:16px}
+.zoom-box img{max-width:100%; max-height:70vh; border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.zoom-box .zbtns{display:flex; gap:10px}
+.zoom-box .zbtns button{padding:10px 20px; border-radius:8px; font-size:13.5px; font-weight:600; border:none}
+.zoom-box .zuse{background:var(--amber); color:var(--ink)}
+.zoom-box .zclose{background:rgba(255,255,255,.15); color:#fff}
 </style>
+
 </head>
 <body>
+
+<!-- ================= TEMPLATE GALLERY (first screen) ================= -->
+<div class="tpl-gate on" id="tplGate">
+  <div class="tpl-gate-top">
+    <div class="tpl-wrap" style="padding:0">
+      <span class="mk">ID</span><h1>Choose a template</h1>
+      <p>Ek ready template se shuru karo, ya bilkul blank se apna khud ka design banao.</p>
+    </div>
+  </div>
+  <div class="tpl-wrap" id="tplGateBody">
+    <div class="tpl-grid" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">
+      <div class="tpl-blank" onclick="chooseBlank()">
+        <div class="plus">+</div>
+        <b>Start blank</b>
+        <span>Khud se poora design banao, scratch se</span>
+      </div>
+    </div>
+    <div id="tplSections"><div class="tpl-empty">Templates load ho rahe hain…</div></div>
+  </div>
+</div>
+
+<div class="zoom-ovl" id="zoomOvl" onclick="if(event.target===this)closeZoom()">
+  <div class="zoom-box">
+    <img id="zoomImg" src="" alt="Template preview">
+    <div class="zbtns">
+      <button class="zuse" id="zoomUseBtn" onclick="useZoomedTemplate()">Use this template</button>
+      <button class="zclose" onclick="closeZoom()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="brand"><span class="mk">ID</span> ID Card Studio <span class="by">Developed by Amar Bhardwaj</span></div>
   <span class="chip a" id="tplBadge">No template</span>
@@ -521,9 +630,9 @@ table.coord tr.msel td{background:var(--blue-soft)}
               <option value="mm">Millimetre</option>
               <option value="px300">Pixels @300dpi</option>
             </select>
-            <button class="btn sm" onclick="copyCoords()">Copy JSON</button>
-            <button class="btn sm" onclick="exportTemplate()">Save template</button>
-            <button class="btn sm" onclick="tplFile.click()">Load</button>
+            <button class="btn sm" onclick="openPassGate('copy')">Copy JSON</button>
+            <button class="btn sm" onclick="openPassGate('save')">Save template</button>
+            <button class="btn sm" onclick="openPassGate('load')">Load</button>
             <input type="file" id="tplFile" accept=".json" hidden onchange="importTemplate(this.files[0]);this.value=''">
           </span>
         </div>
@@ -878,6 +987,20 @@ table.coord tr.msel td{background:var(--blue-soft)}
         <button class="btn amb full" onclick="doSingle('png')">Download PNG</button>
         <button class="btn full" onclick="doSingle('pdf')">Download PDF</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="passOvl" onclick="if(event.target===this)closePassGate()">
+  <div class="modal" style="width:min(360px,100%)">
+    <div class="card-h"><span id="passTitle">Password chahiye</span><button class="btn sm" onclick="closePassGate()">Close</button></div>
+    <div class="card-b">
+      <div class="fld">
+        <label class="lb" id="passLabel">Is feature ko use karne ke liye password daalo</label>
+        <input class="in" type="password" id="passInput" placeholder="Password"
+          onkeydown="if(event.key==='Enter')confirmPassGate()">
+      </div>
+      <button class="btn amb full" onclick="confirmPassGate()">Confirm</button>
     </div>
   </div>
 </div>
@@ -2714,26 +2837,163 @@ function exportTemplate(){
   dl(new Blob([JSON.stringify(data, null, 2)], {type:'application/json'}), 'id-template.json');
   toast('Template save ho gaya', 'ok');
 }
+function applyTemplateData(o){
+  if(o.card) S.card = o.card;
+  if(o.sides){ S.sides = {front: o.sides.front || BLANK_SIDE(), back: o.sides.back || BLANK_SIDE()}; }
+  else if(o.els){ S.sides.front = Object.assign(BLANK_SIDE(), {els:o.els}); }
+  S.twoSided = !!o.twoSided;
+  S.side = 'front'; sel = [];
+  for(const k of ['front','back']) for(const e of S.sides[k].els) if(!e.id) e.id = uid();
+  syncSizeInputs(); syncSideUI(); snapshot(); refreshAll(); fitZoom();
+}
 async function importTemplate(file){
   if(!file) return;
   try{
     const o = JSON.parse(await file.text());
-    if(o.card) S.card = o.card;
-    if(o.sides){ S.sides = {front: o.sides.front || BLANK_SIDE(), back: o.sides.back || BLANK_SIDE()}; }
-    else if(o.els){ S.sides.front = Object.assign(BLANK_SIDE(), {els:o.els}); }
-    S.twoSided = !!o.twoSided;
-    S.side = 'front'; sel = [];
-    for(const k of ['front','back']) for(const e of S.sides[k].els) if(!e.id) e.id = uid();
-    syncSizeInputs(); syncSideUI(); snapshot(); refreshAll(); fitZoom();
+    applyTemplateData(o);
     toast('Template load ho gaya', 'ok');
   }catch(err){ toast('File padhi nahi gayi', 'err'); }
 }
+/* ---------------- TEMPLATE GALLERY ---------------- */
+const ORIENT_LABEL = {vertical:'Vertical cards', horizontal:'Horizontal cards', square:'Square cards'};
+let _tplManifest = [];
+let _zoomTpl = null;
+
+async function loadTemplateGallery(){
+  const box = $('tplSections');
+  try{
+    const res = await fetch('assets/templates/manifest.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('no manifest');
+    const data = await res.json();
+    _tplManifest = Array.isArray(data.templates) ? data.templates : [];
+  }catch(err){
+    _tplManifest = [];
+  }
+  renderTemplateGallery();
+}
+
+function renderTemplateGallery(){
+  const box = $('tplSections');
+  if(!_tplManifest.length){
+    box.innerHTML = `<div class="tpl-empty">Abhi koi ready template nahi hai — "Start blank" se shuru karo. Naye templates yahan automatically dikhne lagenge jaise hi assets/templates me add honge.</div>`;
+    return;
+  }
+  const groups = {};
+  for(const t of _tplManifest){
+    const key = t.orientation || 'vertical';
+    (groups[key] = groups[key] || []).push(t);
+  }
+  let h = '';
+  for(const key of Object.keys(groups)){
+    const label = ORIENT_LABEL[key] || (key.charAt(0).toUpperCase() + key.slice(1));
+    h += `<div class="tpl-sec">
+      <div class="tpl-sec-h">${esc(label)}<span class="ln"></span></div>
+      <div class="tpl-grid">
+        ${groups[key].map(t => `
+          <div class="tpl-card">
+            <div class="tpl-thumb" onclick="openZoom('${esc(t.id)}')">
+              <img src="assets/templates/${esc(t.thumb)}" alt="${esc(t.name)}" loading="lazy">
+              <span class="zoom-ic">⤢</span>
+            </div>
+            <div class="tpl-info">
+              <div class="nm">${esc(t.name)}</div>
+              <div class="sz">${esc(t.size || '')}</div>
+              <button class="tpl-use" onclick="useTemplate('${esc(t.id)}')">Use this template</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+  box.innerHTML = h;
+}
+
+function findTpl(id){ return _tplManifest.find(t => t.id === id); }
+
+function openZoom(id){
+  const t = findTpl(id);
+  if(!t) return;
+  _zoomTpl = t;
+  $('zoomImg').src = `assets/templates/${t.thumb}`;
+  $('zoomOvl').classList.add('on');
+}
+function closeZoom(){
+  $('zoomOvl').classList.remove('on');
+  _zoomTpl = null;
+}
+function useZoomedTemplate(){
+  if(_zoomTpl) useTemplate(_zoomTpl.id);
+}
+
+async function useTemplate(id){
+  const t = findTpl(id);
+  if(!t) return;
+  try{
+    const res = await fetch(`assets/templates/${t.file}`, {cache:'no-store'});
+    if(!res.ok) throw new Error('fetch failed');
+    const o = await res.json();
+    applyTemplateData(o);
+    closeZoom();
+    closeGallery();
+    toast(`"${t.name}" template load ho gaya`, 'ok');
+  }catch(err){
+    toast('Template load nahi ho paya', 'err');
+  }
+}
+
+function chooseBlank(){
+  S.sides[S.side] = BLANK_SIDE();
+  sel = [];
+  syncSideUI(); snapshot(); refreshAll();
+  closeGallery();
+}
+
+function closeGallery(){
+  $('tplGate').classList.remove('on');
+  goTab(0);
+  fitZoom();
+}
+
 function dl(blob, name){
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/* ---------------- PASSWORD GATE (Copy JSON / Save template / Load) ---------------- */
+const PASS_GATE = {
+  copy: {pass:'Akbhardwaj@cjypoc!', label:'Copy JSON ke liye password daalo'},
+  save: {pass:'Akbhardwaj@stevas@', label:'Save template ke liye password daalo'},
+  load: {pass:'Akbhardwaj599@lt#',  label:'Load ke liye password daalo'}
+};
+let _passAction = null;
+function openPassGate(action){
+  _passAction = action;
+  $('passLabel').textContent = PASS_GATE[action].label;
+  $('passInput').value = '';
+  $('passOvl').classList.add('on');
+  setTimeout(() => $('passInput').focus(), 50);
+}
+function closePassGate(){
+  $('passOvl').classList.remove('on');
+  _passAction = null;
+}
+function confirmPassGate(){
+  if(!_passAction) return;
+  const entered = $('passInput').value;
+  const conf = PASS_GATE[_passAction];
+  if(entered !== conf.pass){
+    toast('Galat password', 'err');
+    $('passInput').value = '';
+    $('passInput').focus();
+    return;
+  }
+  const action = _passAction;
+  closePassGate();
+  if(action === 'copy') copyCoords();
+  else if(action === 'save') exportTemplate();
+  else if(action === 'load') tplFile.click();
 }
 </script>
 <script>
@@ -2928,10 +3188,19 @@ function applyMapping(auto){
   } else {
     for(const s of $('mapRows').querySelectorAll('select')) map[s.dataset.f] = parseInt(s.value);
   }
+  const cols = S.pendingCols;
   let added = 0;
   for(const r of S.pendingRows){
     const data = {};
     let any = false;
+    /* keep every raw Excel column as-is too (e.g. "photo number"), even if
+       it isn't used as a field anywhere on the card design — otherwise it's
+       lost and can't be used later for photo matching. */
+    cols.forEach((c, i) => {
+      const v = String(r[i] == null ? '' : r[i]).trim();
+      data[c] = v;
+      if(v) any = true;
+    });
     for(const f in map){
       const i = map[f];
       const v = i >= 0 ? String(r[i] == null ? '' : r[i]).trim() : '';
@@ -2944,6 +3213,7 @@ function applyMapping(auto){
   }
   $('mapBox').style.display = 'none';
   S.pendingRows = null;
+  buildPhotoKeys(true);
   linkPhotos();
   renderStudents(); markDone();
   toast(added + ' students add ho gaye', 'ok');
@@ -2977,17 +3247,32 @@ function uniquePhotoKey(k){
   while(S.photos[k + '~' + i]) i++;
   return k + '~' + i;
 }
-function buildPhotoKeys(){
-  const f = studentFields();
+/* All raw Excel/CSV column headers — regardless of whether that column
+   is actually placed anywhere on the card design. Used for photo matching,
+   where the match column (e.g. "photo number") often isn't a visible field. */
+function sheetColumns(){
+  const out = [];
+  for(const s of S.students){
+    for(const k of Object.keys(s.data || {}))
+      if(!out.includes(k)) out.push(k);
+  }
+  return out;
+}
+function buildPhotoKeys(force){
+  const f = sheetColumns().length ? sheetColumns() : studentFields();
   const selEl = $('photoKey');
   const cur = selEl.value;
   selEl.innerHTML = f.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
-  if(f.includes(cur)) selEl.value = cur;
+  /* a column literally meant for the photo filename (e.g. "Photo Name",
+     "Image", "Pic", "Picture") is the strongest signal — prefer it over
+     roll/ID. On a fresh import (force=true) this wins even if some other
+     field (like Roll No) was already selected, since a fresh sheet's own
+     photo-name column should always win by default. */
+  const photoCol = f.find(x => /photo|image|pic/i.test(x));
+  if(force && photoCol) selEl.value = photoCol;
+  else if(f.includes(cur)) selEl.value = cur;
   else {
-    /* a column literally meant for the photo filename (e.g. "Photo Name",
-       "Image", "Pic") is the strongest signal — prefer it over roll/ID. */
-    const pref = f.find(x => /photo|image|pic/i.test(x)) ||
-                 f.find(x => /roll|adm|id|code/i.test(x)) || f[0];
+    const pref = photoCol || f.find(x => /roll|adm|id|code/i.test(x)) || f[0];
     if(pref) selEl.value = pref;
   }
 }
@@ -3678,12 +3963,12 @@ function init(){
   dropZone($('csvDrop'), files => files[0] && loadSheet(files[0]));
   dropZone($('photoDrop'), files => { if(files && files.length) loadPhotos(files); });
   setOrient('p'); setCut(1);
-  starterTemplate();
   HIST = []; HPOS = -1; snapshot();
   syncSideUI();
   window.addEventListener('resize', () => { if($('p0').classList.contains('on')) fitZoom(); });
   ensureFonts().then(() => { drawStage(); });
   updUndoBtns();
+  loadTemplateGallery();
 }
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();
