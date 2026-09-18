@@ -1,0 +1,12 @@
+{
+  "templates": [
+    {
+      "id": "starter-standard",
+      "name": "Classic Portrait",
+      "file": "starter-standard.json",
+      "thumb": "starter-standard.jpg",
+      "orientation": "vertical",
+      "size": "54 × 85.6 mm"
+    }
+  ]
+}
